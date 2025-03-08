@@ -1,0 +1,165 @@
+---
+title: "Analysis of Correlated Data (CHL5222H Winter 2025)"
+subtitle: "Final Group Project"
+author: "Group 5"
+toc: true
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(car)
+library(knitr)
+library(kableExtra)
+library(sf)
+library(tigris)
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 20)) # Use black/white theme and increase font size for all ggplot figures
+```
+
+```{r}
+library(readr)
+library(dplyr)
+vaccine <- read_csv("data/vaccine.csv")
+vaccine %>% colnames()
+
+
+```
+
+## Preprocess Data
+
+-   recode overall/mmr ==-1 as missing
+-   recode year == null or 2017 as "2017-18"
+
+```{r}
+# code -1 as missing
+vaccine_dat <- vaccine %>% 
+  mutate(overall = ifelse(overall==-1, NA,overall),
+         mmr = ifelse(mmr==-1,NA,mmr)
+         ) %>%   # Oklahoma is null: double check with Aya
+  mutate(year_recode = case_when(year=="null" ~"2017-18",
+                                 year=="2017" ~"2017-18",
+                                 TRUE ~year
+)) 
+```
+
+-   probably should collapse type variable
+
+```{r}
+vaccine$type %>% table()
+```
+
+## EDA
+
+```{r}
+# number of schools in each state
+vaccine %>% 
+  group_by(state) %>% 
+  mutate(n_school = n_distinct(name)) %>% 
+  select(state,n_school) %>% unique() %>% 
+  arrange(desc(n_school)) %>% datatable()
+```
+
+```{r}
+#| output: false
+# Load US states map data
+us_states <- st_as_sf(states())
+
+```
+
+```{r}
+#| fig-height: 8
+intervention_dat <- vaccine %>% select(state,statespending2016) %>% 
+  unique() %>% arrange(statespending2016) 
+
+intervention_dat$state <- factor(intervention_dat$state,levels =dput(intervention_dat$state),labels = dput(intervention_dat$state) )
+
+ intervention_dat %>%  ggplot(aes(x = state, y = statespending2016))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  theme_bw()+
+  ylab("Public Education Spending in 2016")
+```
+
+or show data in map:
+
+```{r}
+#| warning: false
+#| echo: false
+us_states <- st_as_sf(states())
+```
+
+```{r}
+geo_dat <-left_join(us_states, intervention_dat, by = c( "NAME" = "state"))
+geo_dat <- st_as_sf(geo_dat)
+
+
+library(ggplot2)
+library(dplyr)
+
+# Create a map with text labels for each state
+ggplot(data = geo_dat) +
+  geom_sf(aes(fill = statespending2016)) +  # Color the states by spending
+  scale_fill_viridis_c() +  # Use the 'viridis' color scale
+  theme_minimal() +  # Use a minimal theme
+  labs(
+    title = "Public Education Spending in Each State in 2016",
+    fill = ""
+  ) + 
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) + 
+  coord_sf(
+    xlim = c(-125, -66),  # Longitude limits (approximate for the U.S.)
+    ylim = c(24, 50)      # Latitude limits (approximate for the U.S.)
+  ) +
+  xlab("")+
+  ylab("")+
+  geom_sf_text(aes(label = NAME), size = 1.5, color = "black")  # STUSPS
+
+
+```
+
+```{r}
+#| fig-width: 8
+## check missing variables
+library(naniar)
+pct_miss_var(vaccine_dat)
+vis_miss(vaccine_dat)
+```
+
+```{r}
+## vaccine_cc: dataset with complete outcome 
+vaccine_cc <- vaccine_dat %>% 
+  filter(!is.na(overall)) %>% 
+  filter(!is.na(mmr))
+```
+
+```{r}
+#| fig-width: 8
+vis_miss(vaccine_cc)
+```
+
+## Modelling
+
+-   outcome: school vaccination rates (continuous)
+-   data structure multilevel
+    -   level 1: school
+    -   level 2: county
+    -   level 3: city
+    -   level 4: state
+
+![](figures/CHL5222Final.png)
+
+-   covaraites:
+    -   level 1: school type
+    -   level 4: intervention (spending), year?
+-   simplest model could be
+    -   level 1: school/or average over schools within XX
+    -   level 2: state
