@@ -1,0 +1,43 @@
+```{r}
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(car)
+library(knitr)
+library(kableExtra)
+library(sf)
+library(tigris)
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 20)) # Use black/white theme and increase font size for all ggplot figures
+library(table1)
+library(readr)
+library(dplyr)
+```
+
+
+```{r}
+library(dplyr)
+library(table1)
+
+df <- read_csv("data/vaccine.csv")
+
+df <- df %>%
+  mutate(across(c(mmr, overall), ~ ifelse(. == -1, NA, .)))
+
+df_filtered <- df %>% filter(!is.na(type))
+
+df_filtered <- df_filtered %>%
+  rename(
+    `MMR Vaccination Rate` = mmr,
+    `Overall Vaccination Rate` = overall,
+    `Enrollment` = enroll
+  )
+
+my_table <- table1(~ `MMR Vaccination Rate` + `Overall Vaccination Rate` + `Enrollment` | type, data = df_filtered)
+save(my_table, file = "vaccination_table.html")
+
+```
