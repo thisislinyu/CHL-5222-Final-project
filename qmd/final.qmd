@@ -66,6 +66,7 @@ saveRDS(vaccine_dat,file = "data/vaccine_dat.rds")
 
 ## Check the missingness by state
 
+### missing for primary outcome
 ```{r}
 library(naniar)
 library(dplyr)
@@ -74,21 +75,39 @@ missing_outcome_dat <- vaccine_dat %>%
   group_by(state) %>%
   summarise(n_schools = n(),## total number observations in each states
     spend_person = mean(spend_person),
-     miss_outcome_n =  sum(is.na(overall_recode)) , ## total number of schools with outcome missing
-    miss_outcome_prop = mean(is.na(overall_recode)) * 100, ## percent of outcome missing in each state
+     miss_overall_n =  sum(is.na(overall_recode)) , ## total number of schools with outcome missing
+    miss_overall_prop = mean(is.na(overall_recode)) * 100, ## percent of outcome missing in each state
             ) %>% 
-  arrange(desc(miss_outcome_prop))
+  arrange(desc(miss_overall_prop))
 
 
 
 missing_outcome_dat %>% datatable()
 
 
-## number of schools with outcome data
-missing_outcome_dat$tot_n %>% sum()
-
 ```
 
+### missing for secondary outcome
+
+```{r}
+
+
+missing_mmr_dat <- vaccine_dat %>%
+  group_by(state) %>%
+  summarise(n_schools = n(),## total number observations in each states
+    spend_person = mean(spend_person),
+     miss_mmr_n =  sum(is.na(mmr_recode)) , ## total number of schools with outcome missing
+    miss_mmr_prop = mean(is.na(mmr_recode)) * 100, ## percent of outcome missing in each state
+            ) %>% 
+  arrange(desc(miss_mmr_prop))
+
+
+
+missing_mmr_dat %>% datatable()
+
+
+
+```
 
 ## Check the missingness of school type by state:
 
@@ -226,10 +245,10 @@ missing_mmr_dat <- vaccine_dat %>%
   group_by(state) %>%
   summarise(n_schools = n(),## total number observations in each states
     spend_person = mean(spend_person),
-     miss_outcome_n =  sum(is.na(mmr_recode)) , ## total number of schools with outcome missing
-    miss_outcome_prop = mean(is.na(mmr_recode)) * 100, ## percent of outcome missing in each state
+     miss_overall_n =  sum(is.na(mmr_recode)) , ## total number of schools with outcome missing
+    miss_overall_prop = mean(is.na(mmr_recode)) * 100, ## percent of outcome missing in each state
             ) %>% 
-  arrange(desc(miss_outcome_prop))
+  arrange(desc(miss_overall_prop))
 
 
 
