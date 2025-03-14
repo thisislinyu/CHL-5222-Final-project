@@ -31,39 +31,106 @@ vaccine %>% colnames()
 
 ```
 
-## Preprocess Data
-
--   recode overall/mmr ==-1 as missing
--   recode year == null or 2017 as "2017-18"
-
-```{r}
-# code -1 as missing
-vaccine_dat <- vaccine %>% 
-  mutate(overall = ifelse(overall==-1, NA,overall),
-         mmr = ifelse(mmr==-1,NA,mmr)
-         ) %>%   # Oklahoma is null: double check with Aya
-  mutate(year_recode = case_when(year=="null" ~"2017-18",
-                                 year=="2017" ~"2017-18",
-                                 TRUE ~year
-)) 
-```
-
 -   probably should collapse type variable
 
 ```{r}
 vaccine$type %>% table()
 ```
 
-## EDA
+## Preprocess Data
+
+-   recode overall/mmr ==-1 as missing
+-   recode year == null or 2017 as "2017-18" 
+-   recode school type variable: "BOCES", "Kindergarten" and "Public" as Public, the rest as Private
 
 ```{r}
-# number of schools in each state
-vaccine %>% 
-  group_by(state) %>% 
-  mutate(n_school = n_distinct(name)) %>% 
-  select(state,n_school) %>% unique() %>% 
-  arrange(desc(n_school)) %>% datatable()
+# code -1 as missing
+vaccine_dat <- vaccine %>% 
+  mutate(overall_recode = ifelse(overall==-1, NA,overall),
+         mmr_recode = ifelse(mmr==-1,NA,mmr)
+         ) %>%   # Oklahoma is null: double check with Aya
+  mutate(year_recode = case_when(year=="null" ~"2017-18",
+                                 year=="2017" ~"2017-18",
+                                 TRUE ~year
+)) %>% 
+  mutate(type_recode = 
+  case_when(type=="BOCES" | type=="Kindergarten" | type=="Public" ~ "Public",
+            type == "Charter" | type=="Nonpublic" | type=="Private" ~ "Private",
+            TRUE ~ type
+            )
+  ) %>% 
+  mutate(spend_person = statespending2016/schagepop2016)
+
+saveRDS(vaccine_dat,file = "data/vaccine_dat.rds")
 ```
+
+## Check the missingness by state
+
+```{r}
+library(naniar)
+library(dplyr)
+
+missing_outcome_dat <- vaccine_dat %>%
+  group_by(state) %>%
+  summarise(n_schools = n(),## total number observations in each states
+    spend_person = mean(spend_person),
+     miss_outcome_n =  sum(is.na(overall_recode)) , ## total number of schools with outcome missing
+    miss_outcome_prop = mean(is.na(overall_recode)) * 100, ## percent of outcome missing in each state
+            ) %>% 
+  arrange(desc(miss_outcome_prop))
+
+
+
+missing_outcome_dat %>% datatable()
+
+
+## number of schools with outcome data
+missing_outcome_dat$tot_n %>% sum()
+
+```
+
+
+## Check the missingness of school type by state:
+
+The key takeaways:
+- only 8 states report the school type variable. 
+
+### missing school type in the original data
+
+
+```{r}
+table(vaccine_dat$state,vaccine_dat$type_recode,useNA="always")
+
+```
+
+
+
+
+###  missing school type in data with complete overall vaccination rate 
+
+```{r}
+vaccine_cc <-  vaccine_dat %>% filter(overall!=-1) 
+
+table(vaccine_cc$state,vaccine_cc$type_recode,useNA="always")
+
+
+```
+
+
+###  missing school type in data with complete mmr vaccination rate
+
+```{r}
+vaccine_mmr_cc <-  vaccine_dat %>% filter(mmr!=-1) 
+
+table(vaccine_mmr_cc$state,vaccine_mmr_cc$type_recode,useNA="always")
+
+
+```
+
+
+
+## EDA
+
 
 ```{r}
 #| output: false
@@ -74,16 +141,16 @@ us_states <- st_as_sf(states())
 
 ```{r}
 #| fig-height: 8
-intervention_dat <- vaccine %>% select(state,statespending2016) %>% 
-  unique() %>% arrange(statespending2016) 
+intervention_dat <- vaccine_dat %>% select(state,spend_person) %>% 
+  unique() %>% arrange(spend_person) 
 
 intervention_dat$state <- factor(intervention_dat$state,levels =dput(intervention_dat$state),labels = dput(intervention_dat$state) )
 
- intervention_dat %>%  ggplot(aes(x = state, y = statespending2016))+
+ intervention_dat %>%  ggplot(aes(x = state, y = spend_person))+
   geom_bar(stat = "identity")+
   coord_flip()+
   theme_bw()+
-  ylab("Public Education Spending in 2016")
+  ylab("Public Education Spending Per Person")
 ```
 
 or show data in map:
@@ -104,11 +171,11 @@ library(dplyr)
 
 # Create a map with text labels for each state
 ggplot(data = geo_dat) +
-  geom_sf(aes(fill = statespending2016)) +  # Color the states by spending
+  geom_sf(aes(fill = spend_person)) +  # Color the states by spending
   scale_fill_viridis_c() +  # Use the 'viridis' color scale
   theme_minimal() +  # Use a minimal theme
   labs(
-    title = "Public Education Spending in Each State in 2016",
+    title = "Public Education Spending in Each State",
     fill = ""
   ) + 
   theme(
@@ -139,12 +206,43 @@ vis_miss(vaccine_dat)
 vaccine_cc <- vaccine_dat %>% 
   filter(!is.na(overall)) %>% 
   filter(!is.na(mmr))
+
+
 ```
 
 ```{r}
 #| fig-width: 8
 vis_miss(vaccine_cc)
 ```
+
+
+## For Secondary outcome
+
+Check the missingness of the mmr
+
+```{r}
+
+missing_mmr_dat <- vaccine_dat %>%
+  group_by(state) %>%
+  summarise(n_schools = n(),## total number observations in each states
+    spend_person = mean(spend_person),
+     miss_outcome_n =  sum(is.na(mmr_recode)) , ## total number of schools with outcome missing
+    miss_outcome_prop = mean(is.na(mmr_recode)) * 100, ## percent of outcome missing in each state
+            ) %>% 
+  arrange(desc(miss_outcome_prop))
+
+
+
+missing_outcome_dat %>% datatable()
+
+
+## number of schools with outcome data
+missing_outcome_dat$tot_n %>% sum()
+
+```
+
+
+
 
 ## Modelling
 

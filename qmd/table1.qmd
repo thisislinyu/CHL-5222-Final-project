@@ -38,6 +38,7 @@ df_filtered <- df_filtered %>%
   )
 
 my_table <- table1(~ `MMR Vaccination Rate` + `Overall Vaccination Rate` + `Enrollment` | type, data = df_filtered)
+my_table
 save(my_table, file = "vaccination_table.html")
 
 ```
