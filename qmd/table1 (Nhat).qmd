@@ -1,0 +1,110 @@
+---
+title: "Descriptive stat and table 1"
+format:
+  html
+---
+
+```{r, message=FALSE}
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(car)
+library(knitr)
+library(kableExtra)
+library(sf)
+library(tigris)
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 20)) # Use black/white theme and increase font size for all ggplot figures
+library(table1)
+library(readr)
+library(dplyr)
+```
+
+### Read data
+
+```{r}
+vaccine <- read_rds("vaccine_dat.rds")
+```
+
+
+### Data cleaning made by Lin
+
+```{r}
+vaccine_dat <- vaccine %>% 
+  mutate(overall = ifelse(overall == -1, NA, overall),
+         mmr = ifelse(mmr == -1, NA, mmr)) %>%   
+  
+  mutate(year_recode = case_when(
+    year == "null" ~ "2017-18",
+    year == "2017" ~ "2017-18",
+    TRUE ~ year)) %>%
+  
+  mutate(type_recode = case_when(
+    type == "BOCES" | type == "Kindergarten" | type == "Public" ~ "Public",
+    type == "Charter" | type=="Nonpublic" | type == "Private" ~ "Private",
+    TRUE ~ type)) %>%
+  
+  mutate(spend_person = round(statespending2016/schagepop2016, 0))
+```
+
+
+### Descriptive statistics
+
+```{r}
+table1 <- vaccine_dat %>%
+  filter(overall != -1 | mmr != -1) %>%  
+  group_by(state) %>%
+  
+  summarise(
+    private = sum(type_recode == "Private", na.rm = TRUE),
+    public = sum(type_recode == "Public", na.rm = TRUE),
+    na = sum(is.na(type_recode) | type_recode == " ", na.rm = TRUE),
+    
+    mean_overall = round(mean(overall_recode, na.rm = TRUE), 2),
+    sd_overall = round(sd(overall_recode, na.rm = TRUE), 2),
+    median_overall = round(median(overall_recode, na.rm = TRUE), 2),
+    iqr_overall = round(
+            (quantile(overall_recode, 0.75, na.rm = TRUE)
+           - quantile(overall_recode, 0.25, na.rm = TRUE)), 2),
+    
+    mean_mmr = round(mean(mmr_recode, na.rm = TRUE), 2),
+    sd_mmr = round(sd(mmr_recode, na.rm = TRUE), 2),
+    median_mmr = round(median(mmr_recode, na.rm = TRUE), 2),
+    iqr_mmr = round(
+            (quantile(mmr_recode, 0.75, na.rm = TRUE)
+           - quantile(mmr_recode, 0.25, na.rm = TRUE)), 2),
+    
+    spending = unique(statespending2016),
+    spend_person = unique(spend_person)) %>%
+  
+  mutate(across(everything(), ~ replace(., is.na(.), " "))) %>% 
+  
+  mutate(
+    mean_sd_overall = paste0(mean_overall, " (", sd_overall, ")"),
+    median_iqr_overall = paste0(median_overall, " (", iqr_overall, ")"),
+    mean_sd_mmr = paste0(mean_mmr, " (", sd_mmr, ")"),
+    median_iqr_mmr = paste0(median_mmr, " (", iqr_mmr, ")"))
+```
+
+
+### Table 1
+
+```{r}
+table1 %>% 
+  select(state, private, public, na, spending, spend_person, 
+         mean_sd_overall, median_iqr_overall, mean_sd_mmr, median_iqr_mmr) %>% 
+  
+  mutate(across(everything(), ~ replace(., . == "  ( )" |
+                                           . == "  ( - )" , " "))) %>% 
+  
+  kable(col.names = c("State (N = 32)", "Private", "Public", "Unknown", 
+                      "Per state", "Per person", 
+                      "Mean (SD)", "Median (IQR)", "Mean (SD)", "Median (IQR)")) %>% 
+  
+  add_header_above(c(" " = 1, "School type" = 3, "State spending (in $1,000)" = 2, 
+                     "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
+```
