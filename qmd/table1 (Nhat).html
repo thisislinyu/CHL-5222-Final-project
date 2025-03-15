@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Descriptive stat and table 1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="table1 (Nhat)_files/libs/clipboard/clipboard.min.js"></script>
+<script src="table1 (Nhat)_files/libs/quarto-html/quarto.js"></script>
+<script src="table1 (Nhat)_files/libs/quarto-html/popper.min.js"></script>
+<script src="table1 (Nhat)_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="table1 (Nhat)_files/libs/quarto-html/anchor.min.js"></script>
+<link href="table1 (Nhat)_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="table1 (Nhat)_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="table1 (Nhat)_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="table1 (Nhat)_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="table1 (Nhat)_files/libs/bootstrap/bootstrap-973236bd072d72a04ee9cd82dcc9cb29.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="table1 (Nhat)_files/libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="table1 (Nhat)_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+<link href="table1 (Nhat)_files/libs/table1-1.0/table1_defaults.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Descriptive stat and table 1</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tinytex)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(PupillometryR)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(car)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="fu">here</span>())</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">warning =</span> <span class="cn">FALSE</span>, <span class="at">message =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">20</span>)) <span class="co"># Use black/white theme and increase font size for all ggplot figures</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(table1)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="read-data" class="level3">
+<h3 class="anchored" data-anchor-id="read-data">Read data</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>vaccine <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"vaccine.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-cleaning-made-by-lin" class="level3">
+<h3 class="anchored" data-anchor-id="data-cleaning-made-by-lin">Data cleaning made by Lin</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>vaccine_dat <span class="ot">&lt;-</span> vaccine <span class="sc">%&gt;%</span> </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">overall_recode =</span> <span class="fu">ifelse</span>(overall <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, overall),</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">mmr_recode =</span> <span class="fu">ifelse</span>(mmr <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, mmr)) <span class="sc">%&gt;%</span>   </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year_recode =</span> <span class="fu">case_when</span>(</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    year <span class="sc">==</span> <span class="st">"null"</span> <span class="sc">~</span> <span class="st">"2017-18"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    year <span class="sc">==</span> <span class="st">"2017"</span> <span class="sc">~</span> <span class="st">"2017-18"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> year)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">type_recode =</span> <span class="fu">case_when</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    type <span class="sc">==</span> <span class="st">"BOCES"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Kindergarten"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Public"</span> <span class="sc">~</span> <span class="st">"Public"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    type <span class="sc">==</span> <span class="st">"Charter"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Nonpublic"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Private"</span> <span class="sc">~</span> <span class="st">"Private"</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> type)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">spend_person =</span> <span class="fu">round</span>(statespending2016<span class="sc">/</span>schagepop2016, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="descriptive-statistics" class="level3">
+<h3 class="anchored" data-anchor-id="descriptive-statistics">Descriptive statistics</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>total_data <span class="ot">&lt;-</span> vaccine_dat <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mmr_recode <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> overall_recode <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">private_total =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Private"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">public_total =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Public"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">na_total =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type_recode) <span class="sc">|</span> type_recode <span class="sc">==</span> <span class="st">" "</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="ot">&lt;-</span> vaccine_dat <span class="sc">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mmr_recode <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> overall_recode <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(state) <span class="sc">%&gt;%</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">private_number =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Private"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">public_number =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Public"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">na_number =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type_recode) <span class="sc">|</span> type_recode <span class="sc">==</span> <span class="st">" "</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">private_percent =</span> <span class="fu">round</span>(private_number <span class="sc">/</span> total_data<span class="sc">$</span>private_total <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">0</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">public_percent =</span> <span class="fu">round</span>(public_number <span class="sc">/</span> total_data<span class="sc">$</span>public_total <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">0</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">na_percent =</span> <span class="fu">round</span>(na_number <span class="sc">/</span> total_data<span class="sc">$</span>na_total <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">0</span>),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_enroll =</span> <span class="fu">round</span>(<span class="fu">mean</span>(enroll, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_enroll =</span> <span class="fu">round</span>(<span class="fu">sd</span>(enroll, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_enroll =</span> <span class="fu">round</span>(<span class="fu">median</span>(enroll, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">iqr_enroll =</span> <span class="fu">round</span>(</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            (<span class="fu">quantile</span>(enroll, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span> <span class="fu">quantile</span>(enroll, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="dv">2</span>),</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_overall =</span> <span class="fu">round</span>(<span class="fu">mean</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_overall =</span> <span class="fu">round</span>(<span class="fu">sd</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_overall =</span> <span class="fu">round</span>(<span class="fu">median</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">iqr_overall =</span> <span class="fu">round</span>(</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>            (<span class="fu">quantile</span>(overall_recode, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span> <span class="fu">quantile</span>(overall_recode, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="dv">2</span>),</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_mmr =</span> <span class="fu">round</span>(<span class="fu">mean</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_mmr =</span> <span class="fu">round</span>(<span class="fu">sd</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_mmr =</span> <span class="fu">round</span>(<span class="fu">median</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">iqr_mmr =</span> <span class="fu">round</span>(</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>            (<span class="fu">quantile</span>(mmr_recode, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span> <span class="fu">quantile</span>(mmr_recode, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="dv">2</span>),</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">spending =</span> <span class="fu">unique</span>(statespending2016),</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">spend_person =</span> <span class="fu">unique</span>(spend_person)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">replace</span>(., <span class="fu">is.na</span>(.), <span class="st">" "</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">private =</span> <span class="fu">paste0</span>(private_number, <span class="st">" ("</span>, private_percent, <span class="st">"%)"</span>),</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">public =</span> <span class="fu">paste0</span>(public_number, <span class="st">" ("</span>, public_percent, <span class="st">"%)"</span>),</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">na =</span> <span class="fu">paste0</span>(na_number, <span class="st">" ("</span>, na_percent, <span class="st">"%)"</span>),</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_sd_enroll =</span> <span class="fu">paste0</span>(mean_enroll, <span class="st">" ("</span>, sd_enroll, <span class="st">")"</span>),</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_iqr_enroll =</span> <span class="fu">paste0</span>(median_enroll, <span class="st">" ("</span>, iqr_enroll, <span class="st">")"</span>),</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_sd_overall =</span> <span class="fu">paste0</span>(mean_overall, <span class="st">" ("</span>, sd_overall, <span class="st">")"</span>),</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_iqr_overall =</span> <span class="fu">paste0</span>(median_overall, <span class="st">" ("</span>, iqr_overall, <span class="st">")"</span>),</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_sd_mmr =</span> <span class="fu">paste0</span>(mean_mmr, <span class="st">" ("</span>, sd_mmr, <span class="st">")"</span>),</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_iqr_mmr =</span> <span class="fu">paste0</span>(median_mmr, <span class="st">" ("</span>, iqr_mmr, <span class="st">")"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="table-1" class="level3">
+<h3 class="anchored" data-anchor-id="table-1">Table 1</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(state, private, public, na, spending, spend_person, </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>         mean_sd_enroll, median_iqr_enroll,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>         mean_sd_overall, median_iqr_overall, </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>         mean_sd_mmr, median_iqr_mmr) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">replace</span>(., . <span class="sc">==</span> <span class="st">"  ( )"</span> <span class="sc">|</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                           . <span class="sc">==</span> <span class="st">"  ( - )"</span> , <span class="st">" "</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"State &lt;br&gt; (N = 32)"</span>, </span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Private &lt;br&gt; (N = 3367)"</span>, </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Public &lt;br&gt; (N = 13078)"</span>, </span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Unknown &lt;br&gt; (N = 25861)"</span>, </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Per state"</span>, <span class="st">"Per person"</span>, </span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Mean (SD)"</span>, <span class="st">"Median (IQR)"</span>, </span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Mean (SD)"</span>, <span class="st">"Median (IQR)"</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Mean (SD)"</span>, <span class="st">"Median (IQR)"</span>),</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">format =</span> <span class="st">"html"</span>, <span class="at">escape =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_header_above</span>(<span class="fu">c</span>(<span class="st">" "</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">"School type"</span> <span class="ot">=</span> <span class="dv">3</span>, </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"State spending (in $1,000)"</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">"Enrollment"</span> <span class="ot">=</span> <span class="dv">2</span>,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Overall Vaccination Rate"</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">"MMR Vaccination Rate"</span> <span class="ot">=</span> <span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th" style="text-align: left; empty-cells: hide; border-bottom: hidden;"></th>
+<th colspan="3" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+School type
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+State spending (in $1,000)
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Enrollment
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Overall Vaccination Rate
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+MMR Vaccination Rate
+</div></th>
+</tr>
+<tr class="even">
+<th style="text-align: left;" data-quarto-table-cell-role="th">State<br>
+(N = 32)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Private<br>
+(N = 3367)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Public<br>
+(N = 13078)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Unknown<br>
+(N = 25861)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Per state</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Per person</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Mean (SD)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Median (IQR)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Mean (SD)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Median (IQR)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Mean (SD)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Median (IQR)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Arizona</td>
+<td style="text-align: left;">288 (9%)</td>
+<td style="text-align: left;">785 (6%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">7137123</td>
+<td style="text-align: left;">5953</td>
+<td style="text-align: left;">72.66 (32.29)</td>
+<td style="text-align: left;">71 (42)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.7 (8.7)</td>
+<td style="text-align: left;">95 (7.01)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Arkansas</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">481 (2%)</td>
+<td style="text-align: left;">4411761</td>
+<td style="text-align: left;">8567</td>
+<td style="text-align: left;">509.2 (196.21)</td>
+<td style="text-align: left;">496 (263)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">80.52 (8.38)</td>
+<td style="text-align: left;">82.2 (9.7)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">California</td>
+<td style="text-align: left;">871 (26%)</td>
+<td style="text-align: left;">5652 (43%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">68892072</td>
+<td style="text-align: left;">10435</td>
+<td style="text-align: left;">83.09 (44.74)</td>
+<td style="text-align: left;">79 (56)</td>
+<td style="text-align: left;">94.19 (8.79)</td>
+<td style="text-align: left;">96 (3)</td>
+<td style="text-align: left;">95.59 (7.29)</td>
+<td style="text-align: left;">98 (3)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Colorado</td>
+<td style="text-align: left;">17 (1%)</td>
+<td style="text-align: left;">1300 (10%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">8060420</td>
+<td style="text-align: left;">8686</td>
+<td style="text-align: left;">53.28 (51.38)</td>
+<td style="text-align: left;">50 (49)</td>
+<td style="text-align: left;">87.97 (12.59)</td>
+<td style="text-align: left;">91.3 (11.78)</td>
+<td style="text-align: left;">94.42 (8.72)</td>
+<td style="text-align: left;">98.11 (8.33)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Connecticut</td>
+<td style="text-align: left;">18 (1%)</td>
+<td style="text-align: left;">536 (4%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">8687640</td>
+<td style="text-align: left;">15295</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.77 (4.34)</td>
+<td style="text-align: left;">97.86 (4.17)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Florida</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">2236 (9%)</td>
+<td style="text-align: left;">24222830</td>
+<td style="text-align: left;">7976</td>
+<td style="text-align: left;">89.75 (41.95)</td>
+<td style="text-align: left;">89 (50)</td>
+<td style="text-align: left;">92.53 (8.67)</td>
+<td style="text-align: left;">94.37 (5.34)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Idaho</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">467 (2%)</td>
+<td style="text-align: left;">1935653</td>
+<td style="text-align: left;">5993</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">82.44 (15.59)</td>
+<td style="text-align: left;">86.67 (14.1)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Illinois</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">3574 (14%)</td>
+<td style="text-align: left;">23933484</td>
+<td style="text-align: left;">11122</td>
+<td style="text-align: left;">350.8 (235.67)</td>
+<td style="text-align: left;">328 (288.75)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">97.07 (4.64)</td>
+<td style="text-align: left;">98.18 (2.52)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Iowa</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">783 (3%)</td>
+<td style="text-align: left;">5517359</td>
+<td style="text-align: left;">10352</td>
+<td style="text-align: left;">333.34 (175.42)</td>
+<td style="text-align: left;">300 (207)</td>
+<td style="text-align: left;">95.81 (4.73)</td>
+<td style="text-align: left;">96.9 (2.8)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Maine</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">353 (1%)</td>
+<td style="text-align: left;">2290535</td>
+<td style="text-align: left;">12055</td>
+<td style="text-align: left;">72.61 (223.94)</td>
+<td style="text-align: left;">30 (45)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.55 (8.97)</td>
+<td style="text-align: left;">94.74 (8.24)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Massachusetts</td>
+<td style="text-align: left;">43 (1%)</td>
+<td style="text-align: left;">784 (6%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">13998163</td>
+<td style="text-align: left;">13778</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.92 (6.3)</td>
+<td style="text-align: left;">99 (3)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Michigan</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1899 (7%)</td>
+<td style="text-align: left;">15328155</td>
+<td style="text-align: left;">9456</td>
+<td style="text-align: left;">61.57 (39.44)</td>
+<td style="text-align: left;">58 (47)</td>
+<td style="text-align: left;">92.12 (6.81)</td>
+<td style="text-align: left;">93.5 (6.05)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Minnesota</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1112 (4%)</td>
+<td style="text-align: left;">9987116</td>
+<td style="text-align: left;">10625</td>
+<td style="text-align: left;">60.29 (48.36)</td>
+<td style="text-align: left;">52.5 (64)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">90.27 (11.57)</td>
+<td style="text-align: left;">93.92 (9.53)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Missouri</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">441 (2%)</td>
+<td style="text-align: left;">8996869</td>
+<td style="text-align: left;">8890</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">91.14 (12.8)</td>
+<td style="text-align: left;">96 (8.6)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Montana</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">448 (2%)</td>
+<td style="text-align: left;">1598517</td>
+<td style="text-align: left;">9688</td>
+<td style="text-align: left;">231.5 (339.49)</td>
+<td style="text-align: left;">173 (246.5)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">93.87 (10.42)</td>
+<td style="text-align: left;">97.15 (5.72)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">New Jersey</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1982 (8%)</td>
+<td style="text-align: left;">24349836</td>
+<td style="text-align: left;">16781</td>
+<td style="text-align: left;">52.43 (41.86)</td>
+<td style="text-align: left;">44 (54)</td>
+<td style="text-align: left;">95.31 (8.19)</td>
+<td style="text-align: left;">97.8 (5.6)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">New York</td>
+<td style="text-align: left;">1693 (50%)</td>
+<td style="text-align: left;">1869 (14%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">56656536</td>
+<td style="text-align: left;">19000</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.94 (10.9)</td>
+<td style="text-align: left;">99 (2.3)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">North Carolina</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1766 (7%)</td>
+<td style="text-align: left;">12620939</td>
+<td style="text-align: left;">7468</td>
+<td style="text-align: left;">64.06 (40.87)</td>
+<td style="text-align: left;">63 (60)</td>
+<td style="text-align: left;">96.79 (7.52)</td>
+<td style="text-align: left;">100 (3)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">North Dakota</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">266 (1%)</td>
+<td style="text-align: left;">1393844</td>
+<td style="text-align: left;">11519</td>
+<td style="text-align: left;">38 (29.36)</td>
+<td style="text-align: left;">27 (39.75)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.84 (10.02)</td>
+<td style="text-align: left;">95.39 (8.9)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ohio</td>
+<td style="text-align: left;">404 (12%)</td>
+<td style="text-align: left;">1584 (12%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">20271944</td>
+<td style="text-align: left;">10558</td>
+<td style="text-align: left;">66.33 (48.09)</td>
+<td style="text-align: left;">58 (46)</td>
+<td style="text-align: left;">87.85 (14.29)</td>
+<td style="text-align: left;">92.86 (10.84)</td>
+<td style="text-align: left;">90.37 (12.66)</td>
+<td style="text-align: left;">94.63 (8.98)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Oklahoma</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">794 (3%)</td>
+<td style="text-align: left;">4958496</td>
+<td style="text-align: left;">7114</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">90.89 (9.86)</td>
+<td style="text-align: left;">94 (10)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Oregon</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">723 (3%)</td>
+<td style="text-align: left;">6285584</td>
+<td style="text-align: left;">9867</td>
+<td style="text-align: left;">56.99 (33.31)</td>
+<td style="text-align: left;">57 (42)</td>
+<td style="text-align: left;">91.28 (7.71)</td>
+<td style="text-align: left;">93.4 (4.88)</td>
+<td style="text-align: left;">93.91 (6.34)</td>
+<td style="text-align: left;">95.55 (3.83)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Pennsylvania</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1635 (6%)</td>
+<td style="text-align: left;">25955384</td>
+<td style="text-align: left;">13209</td>
+<td style="text-align: left;">72.09 (48.47)</td>
+<td style="text-align: left;">63 (45)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.83 (4.51)</td>
+<td style="text-align: left;">97.9 (4)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rhode Island</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">215 (1%)</td>
+<td style="text-align: left;">2297516</td>
+<td style="text-align: left;">14919</td>
+<td style="text-align: left;">50.8 (32.91)</td>
+<td style="text-align: left;">46 (42.5)</td>
+<td style="text-align: left;">94.87 (9.02)</td>
+<td style="text-align: left;">97.4 (6.7)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">South Dakota</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">363 (1%)</td>
+<td style="text-align: left;">1185796</td>
+<td style="text-align: left;">7801</td>
+<td style="text-align: left;">33.35 (35.76)</td>
+<td style="text-align: left;">19 (42)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.03 (9.92)</td>
+<td style="text-align: left;">100 (5.47)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Tennessee</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1004 (4%)</td>
+<td style="text-align: left;">8294165</td>
+<td style="text-align: left;">7554</td>
+<td style="text-align: left;">75.58 (40.32)</td>
+<td style="text-align: left;">71 (52)</td>
+<td style="text-align: left;">94.95 (4.44)</td>
+<td style="text-align: left;">95.8 (4.9)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Texas</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">777 (3%)</td>
+<td style="text-align: left;">43287224</td>
+<td style="text-align: left;">8152</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">93.11 (10.66)</td>
+<td style="text-align: left;">97.92 (9.68)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Utah</td>
+<td style="text-align: left;">33 (1%)</td>
+<td style="text-align: left;">568 (4%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">3931265</td>
+<td style="text-align: left;">5885</td>
+<td style="text-align: left;">488.26 (241.06)</td>
+<td style="text-align: left;">498 (271)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.2 (5.4)</td>
+<td style="text-align: left;">96.34 (3.66)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vermont</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">338 (1%)</td>
+<td style="text-align: left;">1536843</td>
+<td style="text-align: left;">17464</td>
+<td style="text-align: left;">162.5 (163.01)</td>
+<td style="text-align: left;">112.5 (159.5)</td>
+<td style="text-align: left;">91.58 (10.91)</td>
+<td style="text-align: left;">94.78 (6.95)</td>
+<td style="text-align: left;">94.58 (8.64)</td>
+<td style="text-align: left;">97.22 (5.11)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Virginia</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1413 (5%)</td>
+<td style="text-align: left;">14385736</td>
+<td style="text-align: left;">10593</td>
+<td style="text-align: left;">72.26 (42.67)</td>
+<td style="text-align: left;">72 (57)</td>
+<td style="text-align: left;">93.8 (8.16)</td>
+<td style="text-align: left;">95.9 (6.9)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Washington</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1368 (5%)</td>
+<td style="text-align: left;">12315163</td>
+<td style="text-align: left;">10428</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">83.7 (15.23)</td>
+<td style="text-align: left;">87.76 (13.86)</td>
+<td style="text-align: left;">88.64 (12.59)</td>
+<td style="text-align: left;">92.16 (10.17)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Wisconsin</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">0 (0%)</td>
+<td style="text-align: left;">1423 (6%)</td>
+<td style="text-align: left;">9691073</td>
+<td style="text-align: left;">10180</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">85.81 (12.45)</td>
+<td style="text-align: left;">90 (12)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"vaccine.csv"</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(mmr, overall), <span class="sc">~</span> <span class="fu">ifelse</span>(. <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, .)))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>df_filtered <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(type))</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>df_filtered <span class="ot">&lt;-</span> df_filtered <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">MMR Vaccination Rate</span><span class="st">`</span> <span class="ot">=</span> mmr,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Overall Vaccination Rate</span><span class="st">`</span> <span class="ot">=</span> overall,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Enrollment</span><span class="st">`</span> <span class="ot">=</span> enroll</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>my_table <span class="ot">&lt;-</span> <span class="fu">table1</span>(<span class="sc">~</span> <span class="st">`</span><span class="at">MMR Vaccination Rate</span><span class="st">`</span> <span class="sc">+</span> <span class="st">`</span><span class="at">Overall Vaccination Rate</span><span class="st">`</span> <span class="sc">+</span> <span class="st">`</span><span class="at">Enrollment</span><span class="st">`</span> <span class="sc">|</span> type, <span class="at">data =</span> df_filtered)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>my_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="Rtable1">
+<table class="Rtable1 caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th class="rowlabel firstrow lastrow" data-quarto-table-cell-role="th"></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">BOCES<br>
+<span class="stratn">(N=47)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Charter<br>
+<span class="stratn">(N=273)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Kindergarten<br>
+<span class="stratn">(N=1302)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Nonpublic<br>
+<span class="stratn">(N=166)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Private<br>
+<span class="stratn">(N=4910)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Public<br>
+<span class="stratn">(N=12539)</span></span></th>
+<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Overall<br>
+<span class="stratn">(N=19237)</span></span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td class="rowlabel firstrow">MMR Vaccination Rate</td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+</tr>
+<tr class="even">
+<td class="rowlabel">Mean (SD)</td>
+<td>98.8 (2.53)</td>
+<td>87.8 (11.6)</td>
+<td>94.4 (8.74)</td>
+<td>94.4 (8.46)</td>
+<td>92.5 (13.0)</td>
+<td>95.6 (7.69)</td>
+<td>94.8 (9.19)</td>
+</tr>
+<tr class="odd">
+<td class="rowlabel">Median [Min, Max]</td>
+<td>99.4 [84.6, 100]</td>
+<td>90.9 [22.9, 100]</td>
+<td>98.1 [16.2, 100]</td>
+<td>97.3 [69.3, 100]</td>
+<td>95.5 [3.00, 100]</td>
+<td>98.0 [1.00, 100]</td>
+<td>98.0 [1.00, 100]</td>
+</tr>
+<tr class="even">
+<td class="rowlabel lastrow">Missing</td>
+<td class="lastrow">0 (0%)</td>
+<td class="lastrow">59 (21.6%)</td>
+<td class="lastrow">2 (0.2%)</td>
+<td class="lastrow">148 (89.2%)</td>
+<td class="lastrow">1775 (36.2%)</td>
+<td class="lastrow">808 (6.4%)</td>
+<td class="lastrow">2792 (14.5%)</td>
+</tr>
+<tr class="odd">
+<td class="rowlabel firstrow">Overall Vaccination Rate</td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+</tr>
+<tr class="even">
+<td class="rowlabel">Mean (SD)</td>
+<td>NA (NA)</td>
+<td>NA (NA)</td>
+<td>88.1 (12.5)</td>
+<td>NA (NA)</td>
+<td>90.1 (12.0)</td>
+<td>93.2 (10.4)</td>
+<td>92.1 (11.1)</td>
+</tr>
+<tr class="odd">
+<td class="rowlabel">Median [Min, Max]</td>
+<td>NA [NA, NA]</td>
+<td>NA [NA, NA]</td>
+<td>91.3 [7.35, 100]</td>
+<td>NA [NA, NA]</td>
+<td>95.0 [5.00, 100]</td>
+<td>96.0 [1.00, 100]</td>
+<td>95.0 [1.00, 100]</td>
+</tr>
+<tr class="even">
+<td class="rowlabel lastrow">Missing</td>
+<td class="lastrow">47 (100%)</td>
+<td class="lastrow">273 (100%)</td>
+<td class="lastrow">4 (0.3%)</td>
+<td class="lastrow">166 (100%)</td>
+<td class="lastrow">3618 (73.7%)</td>
+<td class="lastrow">5306 (42.3%)</td>
+<td class="lastrow">9414 (48.9%)</td>
+</tr>
+<tr class="odd">
+<td class="rowlabel firstrow">Enrollment</td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+<td class="firstrow"></td>
+</tr>
+<tr class="even">
+<td class="rowlabel">Mean (SD)</td>
+<td>NA (NA)</td>
+<td>73.3 (41.8)</td>
+<td>52.3 (46.6)</td>
+<td>NA (NA)</td>
+<td>27.4 (35.2)</td>
+<td>109 (127)</td>
+<td>87.8 (113)</td>
+</tr>
+<tr class="odd">
+<td class="rowlabel">Median [Min, Max]</td>
+<td>NA [NA, NA]</td>
+<td>65.5 [21.0, 218]</td>
+<td>50.0 [1.00, 1110]</td>
+<td>NA [NA, NA]</td>
+<td>21.0 [1.00, 703]</td>
+<td>81.0 [1.00, 1250]</td>
+<td>67.0 [1.00, 1250]</td>
+</tr>
+<tr class="even">
+<td class="rowlabel lastrow">Missing</td>
+<td class="lastrow">47 (100%)</td>
+<td class="lastrow">59 (21.6%)</td>
+<td class="lastrow">0 (0%)</td>
+<td class="lastrow">166 (100%)</td>
+<td class="lastrow">2568 (52.3%)</td>
+<td class="lastrow">3549 (28.3%)</td>
+<td class="lastrow">6389 (33.2%)</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(my_table, <span class="at">file =</span> <span class="st">"vaccination_table.html"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
