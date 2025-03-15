@@ -27,7 +27,7 @@ library(dplyr)
 ### Read data
 
 ```{r}
-vaccine <- read_rds("vaccine_dat.rds")
+vaccine <- read_rds("data/vaccine_dat.rds")
 ```
 
 
