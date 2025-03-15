@@ -27,7 +27,7 @@ library(dplyr)
 ### Read data
 
 ```{r}
-vaccine <- read_rds("data/vaccine_dat.rds")
+vaccine <- read_csv("vaccine.csv")
 ```
 
 
@@ -35,8 +35,8 @@ vaccine <- read_rds("data/vaccine_dat.rds")
 
 ```{r}
 vaccine_dat <- vaccine %>% 
-  mutate(overall = ifelse(overall == -1, NA, overall),
-         mmr = ifelse(mmr == -1, NA, mmr)) %>%   
+  mutate(overall_recode = ifelse(overall == -1, NA, overall),
+         mmr_recode = ifelse(mmr == -1, NA, mmr)) %>%   
   
   mutate(year_recode = case_when(
     year == "null" ~ "2017-18",
@@ -45,7 +45,7 @@ vaccine_dat <- vaccine %>%
   
   mutate(type_recode = case_when(
     type == "BOCES" | type == "Kindergarten" | type == "Public" ~ "Public",
-    type == "Charter" | type=="Nonpublic" | type == "Private" ~ "Private",
+    type == "Charter" | type == "Nonpublic" | type == "Private" ~ "Private",
     TRUE ~ type)) %>%
   
   mutate(spend_person = round(statespending2016/schagepop2016, 0))
@@ -55,14 +55,33 @@ vaccine_dat <- vaccine %>%
 ### Descriptive statistics
 
 ```{r}
-table1 <- vaccine_dat %>%
-  filter(overall != -1 | mmr != -1) %>%  
-  group_by(state) %>%
-  
+total_data <- vaccine_dat %>%
+  filter(mmr_recode != -1 | overall_recode != -1) %>%  
   summarise(
-    private = sum(type_recode == "Private", na.rm = TRUE),
-    public = sum(type_recode == "Public", na.rm = TRUE),
-    na = sum(is.na(type_recode) | type_recode == " ", na.rm = TRUE),
+    private_total = sum(type_recode == "Private", na.rm = TRUE),
+    public_total = sum(type_recode == "Public", na.rm = TRUE),
+    na_total = sum(is.na(type_recode) | type_recode == " ", na.rm = TRUE))
+```
+
+```{r}
+table1 <- vaccine_dat %>%
+  filter(mmr_recode != -1 | overall_recode != -1) %>%  
+  group_by(state) %>%
+  summarise(
+    private_number = sum(type_recode == "Private", na.rm = TRUE),
+    public_number = sum(type_recode == "Public", na.rm = TRUE),
+    na_number = sum(is.na(type_recode) | type_recode == " ", na.rm = TRUE),
+    
+    private_percent = round(private_number / total_data$private_total * 100, 0),
+    public_percent = round(public_number / total_data$public_total * 100, 0),
+    na_percent = round(na_number / total_data$na_total * 100, 0),
+    
+    mean_enroll = round(mean(enroll, na.rm = TRUE), 2),
+    sd_enroll = round(sd(enroll, na.rm = TRUE), 2),
+    median_enroll = round(median(enroll, na.rm = TRUE), 2),
+    iqr_enroll = round(
+            (quantile(enroll, 0.75, na.rm = TRUE)
+           - quantile(enroll, 0.25, na.rm = TRUE)), 2),
     
     mean_overall = round(mean(overall_recode, na.rm = TRUE), 2),
     sd_overall = round(sd(overall_recode, na.rm = TRUE), 2),
@@ -84,27 +103,60 @@ table1 <- vaccine_dat %>%
   mutate(across(everything(), ~ replace(., is.na(.), " "))) %>% 
   
   mutate(
+    private = paste0(private_number, " (", private_percent, "%)"),
+    public = paste0(public_number, " (", public_percent, "%)"),
+    na = paste0(na_number, " (", na_percent, "%)"),
+    mean_sd_enroll = paste0(mean_enroll, " (", sd_enroll, ")"),
+    median_iqr_enroll = paste0(median_enroll, " (", iqr_enroll, ")"),
     mean_sd_overall = paste0(mean_overall, " (", sd_overall, ")"),
     median_iqr_overall = paste0(median_overall, " (", iqr_overall, ")"),
     mean_sd_mmr = paste0(mean_mmr, " (", sd_mmr, ")"),
     median_iqr_mmr = paste0(median_mmr, " (", iqr_mmr, ")"))
 ```
 
-
 ### Table 1
 
 ```{r}
 table1 %>% 
   select(state, private, public, na, spending, spend_person, 
-         mean_sd_overall, median_iqr_overall, mean_sd_mmr, median_iqr_mmr) %>% 
+         mean_sd_enroll, median_iqr_enroll,
+         mean_sd_overall, median_iqr_overall, 
+         mean_sd_mmr, median_iqr_mmr) %>% 
   
   mutate(across(everything(), ~ replace(., . == "  ( )" |
                                            . == "  ( - )" , " "))) %>% 
   
-  kable(col.names = c("State (N = 32)", "Private", "Public", "Unknown", 
+  kable(col.names = c("State <br> (N = 32)", 
+                      "Private <br> (N = 3367)", 
+                      "Public <br> (N = 13078)", 
+                      "Unknown <br> (N = 25861)", 
                       "Per state", "Per person", 
-                      "Mean (SD)", "Median (IQR)", "Mean (SD)", "Median (IQR)")) %>% 
-  
-  add_header_above(c(" " = 1, "School type" = 3, "State spending (in $1,000)" = 2, 
+                      "Mean (SD)", "Median (IQR)", 
+                      "Mean (SD)", "Median (IQR)",
+                      "Mean (SD)", "Median (IQR)"),
+        format = "html", escape = FALSE) %>% 
+  add_header_above(c(" " = 1, "School type" = 3, 
+                     "State spending (in $1,000)" = 2, "Enrollment" = 2,
                      "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
 ```
+
+```{r}
+df <- read_csv("vaccine.csv")
+
+df <- df %>%
+  mutate(across(c(mmr, overall), ~ ifelse(. == -1, NA, .)))
+
+df_filtered <- df %>% filter(!is.na(type))
+
+df_filtered <- df_filtered %>%
+  rename(
+    `MMR Vaccination Rate` = mmr,
+    `Overall Vaccination Rate` = overall,
+    `Enrollment` = enroll
+  )
+
+my_table <- table1(~ `MMR Vaccination Rate` + `Overall Vaccination Rate` + `Enrollment` | type, data = df_filtered)
+my_table
+save(my_table, file = "vaccination_table.html")
+```
+

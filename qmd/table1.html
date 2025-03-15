@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.6.40">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>table1</title>
+<title>Descriptive stat and table 1</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -63,11 +63,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="table1_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="table1_files/libs/quarto-html/anchor.min.js"></script>
 <link href="table1_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="table1_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="table1_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="table1_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="table1_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="table1_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
-<link href="table1_files/libs/table1-1.0/table1_defaults.css" rel="stylesheet">
+<link href="table1_files/libs/bootstrap/bootstrap-973236bd072d72a04ee9cd82dcc9cb29.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="table1_files/libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="table1_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
 
 
 </head>
@@ -78,307 +79,561 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Descriptive stat and table 1</h1>
+</div>
 
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
 
 
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>here() starts at /Users/yulin/DLSPH/CHL5222/CHL 5222 Final project</code></pre>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tinytex)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(PupillometryR)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(car)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="fu">here</span>())</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">warning =</span> <span class="cn">FALSE</span>, <span class="at">message =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">20</span>)) <span class="co"># Use black/white theme and increase font size for all ggplot figures</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(table1)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'tidyr' was built under R version 4.3.2</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.5
-✔ forcats   1.0.0     ✔ stringr   1.5.1
-✔ ggplot2   3.5.1     ✔ tibble    3.2.1
-✔ lubridate 1.9.3     ✔ tidyr     1.3.1
-✔ purrr     1.0.2     </code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()
-ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tinytex)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'tinytex' was built under R version 4.3.3</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(PupillometryR)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: rlang</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'rlang' was built under R version 4.3.3</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'rlang'
-
-The following object is masked from 'package:tinytex':
-
-    check_installed
-
-The following objects are masked from 'package:purrr':
-
-    %@%, flatten, flatten_chr, flatten_dbl, flatten_int, flatten_lgl,
-    flatten_raw, invoke, splice</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'lme4' was built under R version 4.3.3</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: Matrix
-
-Attaching package: 'Matrix'
-
-The following objects are masked from 'package:tidyr':
-
-    expand, pack, unpack</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(car)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: carData
-
-Attaching package: 'car'
-
-The following object is masked from 'package:dplyr':
-
-    recode
-
-The following object is masked from 'package:purrr':
-
-    some</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'knitr' was built under R version 4.3.3</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'kableExtra'
-
-The following object is masked from 'package:dplyr':
-
-    group_rows</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'sf' was built under R version 4.3.2</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Linking to GEOS 3.11.0, GDAL 3.5.3, PROJ 9.1.0; sf_use_s2() is TRUE</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'tigris' was built under R version 4.3.2</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>To enable caching of data, set `options(tigris_use_cache = TRUE)`
-in your R script or .Rprofile.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="fu">here</span>())</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">warning =</span> <span class="cn">FALSE</span>, <span class="at">message =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">20</span>)) <span class="co"># Use black/white theme and increase font size for all ggplot figures</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(table1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'table1'
-
-The following objects are masked from 'package:base':
-
-    units, units&lt;-</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="read-data" class="level3">
+<h3 class="anchored" data-anchor-id="read-data">Read data</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/Documents/Year 1/Year 1 (Winter)/CHL5222 (Correlation)/Final project/qmd"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>vaccine <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"vaccine_dat.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(table1)</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/vaccine.csv"</span>)</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(mmr, overall), <span class="sc">~</span> <span class="fu">ifelse</span>(. <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, .)))</span>
-<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>df_filtered <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(type))</span>
-<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>df_filtered <span class="ot">&lt;-</span> df_filtered <span class="sc">%&gt;%</span></span>
-<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
-<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">MMR Vaccination Rate</span><span class="st">`</span> <span class="ot">=</span> mmr,</span>
-<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Overall Vaccination Rate</span><span class="st">`</span> <span class="ot">=</span> overall,</span>
-<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Enrollment</span><span class="st">`</span> <span class="ot">=</span> enroll</span>
-<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>my_table <span class="ot">&lt;-</span> <span class="fu">table1</span>(<span class="sc">~</span> <span class="st">`</span><span class="at">MMR Vaccination Rate</span><span class="st">`</span> <span class="sc">+</span> <span class="st">`</span><span class="at">Overall Vaccination Rate</span><span class="st">`</span> <span class="sc">+</span> <span class="st">`</span><span class="at">Enrollment</span><span class="st">`</span> <span class="sc">|</span> type, <span class="at">data =</span> df_filtered)</span>
-<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>my_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>vaccine<span class="sc">$</span>state <span class="sc">%&gt;%</span> <span class="fu">n_distinct</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 32</code></pre>
+</div>
+</div>
+</section>
+<section id="data-cleaning-made-by-lin" class="level3">
+<h3 class="anchored" data-anchor-id="data-cleaning-made-by-lin">Data cleaning made by Lin</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>vaccine_dat <span class="ot">&lt;-</span> vaccine <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">overall =</span> <span class="fu">ifelse</span>(overall <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, overall),</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">mmr =</span> <span class="fu">ifelse</span>(mmr <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>, <span class="cn">NA</span>, mmr)) <span class="sc">%&gt;%</span>   </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year_recode =</span> <span class="fu">case_when</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    year <span class="sc">==</span> <span class="st">"null"</span> <span class="sc">~</span> <span class="st">"2017-18"</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    year <span class="sc">==</span> <span class="st">"2017"</span> <span class="sc">~</span> <span class="st">"2017-18"</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> year)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">type_recode =</span> <span class="fu">case_when</span>(</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    type <span class="sc">==</span> <span class="st">"BOCES"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Kindergarten"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Public"</span> <span class="sc">~</span> <span class="st">"Public"</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    type <span class="sc">==</span> <span class="st">"Charter"</span> <span class="sc">|</span> type<span class="sc">==</span><span class="st">"Nonpublic"</span> <span class="sc">|</span> type <span class="sc">==</span> <span class="st">"Private"</span> <span class="sc">~</span> <span class="st">"Private"</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> type)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">spend_person =</span> <span class="fu">round</span>(statespending2016<span class="sc">/</span>schagepop2016, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="descriptive-statistics" class="level3">
+<h3 class="anchored" data-anchor-id="descriptive-statistics">Descriptive statistics</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="ot">&lt;-</span> vaccine_dat <span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(overall <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> mmr <span class="sc">!=</span> <span class="sc">-</span><span class="dv">1</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(state) <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">private =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Private"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">public =</span> <span class="fu">sum</span>(type_recode <span class="sc">==</span> <span class="st">"Public"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">na =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type_recode) <span class="sc">|</span> type_recode <span class="sc">==</span> <span class="st">" "</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_overall =</span> <span class="fu">round</span>(<span class="fu">mean</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_overall =</span> <span class="fu">round</span>(<span class="fu">sd</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_overall =</span> <span class="fu">round</span>(<span class="fu">median</span>(overall_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">iqr_overall =</span> <span class="fu">round</span>(</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>            (<span class="fu">quantile</span>(overall_recode, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span> <span class="fu">quantile</span>(overall_recode, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="dv">2</span>),</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_mmr =</span> <span class="fu">round</span>(<span class="fu">mean</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_mmr =</span> <span class="fu">round</span>(<span class="fu">sd</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_mmr =</span> <span class="fu">round</span>(<span class="fu">median</span>(mmr_recode, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">2</span>),</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">iqr_mmr =</span> <span class="fu">round</span>(</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            (<span class="fu">quantile</span>(mmr_recode, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span> <span class="fu">quantile</span>(mmr_recode, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="dv">2</span>),</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">spending =</span> <span class="fu">unique</span>(statespending2016),</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">spend_person =</span> <span class="fu">unique</span>(spend_person)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">replace</span>(., <span class="fu">is.na</span>(.), <span class="st">" "</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_sd_overall =</span> <span class="fu">paste0</span>(mean_overall, <span class="st">" ("</span>, sd_overall, <span class="st">")"</span>),</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_q_overall =</span> <span class="fu">paste0</span>(median_overall, <span class="st">" ("</span>, iqr_overall, <span class="st">")"</span>),</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_sd_mmr =</span> <span class="fu">paste0</span>(mean_mmr, <span class="st">" ("</span>, sd_mmr, <span class="st">")"</span>),</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_q_mmr =</span> <span class="fu">paste0</span>(median_mmr, <span class="st">" ("</span>, iqr_mmr, <span class="st">")"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="table-1" class="level3">
+<h3 class="anchored" data-anchor-id="table-1">Table 1</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="sc">%&gt;%</span> </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(state, private, public, na, spending, spend_person, </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>         mean_sd_overall, median_q_overall, mean_sd_mmr, median_q_mmr) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">replace</span>(., . <span class="sc">==</span> <span class="st">"  ( )"</span> <span class="sc">|</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                           . <span class="sc">==</span> <span class="st">"  ( - )"</span> , <span class="st">" "</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"State (N = 32)"</span>, <span class="st">"Private"</span>, <span class="st">"Public"</span>, <span class="st">"Unknown"</span>, </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Per state"</span>, <span class="st">"Per person"</span>, </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Mean (SD)"</span>, <span class="st">"Median (IQR)"</span>, <span class="st">"Mean (SD)"</span>, <span class="st">"Median (IQR)"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_header_above</span>(<span class="fu">c</span>(<span class="st">" "</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">"School type"</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">"State spending (in $1,000)"</span> <span class="ot">=</span> <span class="dv">2</span>, </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"Overall Vaccination Rate"</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">"MMR Vaccination Rate"</span> <span class="ot">=</span> <span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div class="Rtable1">
-<table class="Rtable1 caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <colgroup>
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 12%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
 </colgroup>
 <thead>
 <tr class="header">
-<th class="rowlabel firstrow lastrow" data-quarto-table-cell-role="th"></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">BOCES<br>
-<span class="stratn">(N=47)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Charter<br>
-<span class="stratn">(N=273)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Kindergarten<br>
-<span class="stratn">(N=1302)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Nonpublic<br>
-<span class="stratn">(N=166)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Private<br>
-<span class="stratn">(N=4910)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Public<br>
-<span class="stratn">(N=12539)</span></span></th>
-<th class="firstrow lastrow" data-quarto-table-cell-role="th"><span class="stratlabel">Overall<br>
-<span class="stratn">(N=19237)</span></span></th>
+<th data-quarto-table-cell-role="th" style="text-align: left; empty-cells: hide; border-bottom: hidden;"></th>
+<th colspan="3" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+School type
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+State spending (in $1,000)
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Overall Vaccination Rate
+</div></th>
+<th colspan="2" data-quarto-table-cell-role="th" style="text-align: center; border-bottom: hidden; padding-bottom: 0; padding-left: 3px; padding-right: 3px;"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+MMR Vaccination Rate
+</div></th>
+</tr>
+<tr class="even">
+<th style="text-align: left;" data-quarto-table-cell-role="th">State (N = 32)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Private</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Public</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Unknown</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Per state</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Per person</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Mean (SD)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Median (IQR)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Mean (SD)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Median (IQR)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td class="rowlabel firstrow">MMR Vaccination Rate</td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
+<td style="text-align: left;">Arizona</td>
+<td style="text-align: left;">288</td>
+<td style="text-align: left;">785</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">7137123</td>
+<td style="text-align: left;">5953</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.7 (8.7)</td>
+<td style="text-align: left;">95 (7.01)</td>
 </tr>
 <tr class="even">
-<td class="rowlabel">Mean (SD)</td>
-<td>98.8 (2.53)</td>
-<td>87.8 (11.6)</td>
-<td>94.4 (8.74)</td>
-<td>94.4 (8.46)</td>
-<td>92.5 (13.0)</td>
-<td>95.6 (7.69)</td>
-<td>94.8 (9.19)</td>
+<td style="text-align: left;">Arkansas</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">481</td>
+<td style="text-align: left;">4411761</td>
+<td style="text-align: left;">8567</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">80.52 (8.38)</td>
+<td style="text-align: left;">82.2 (9.7)</td>
 </tr>
 <tr class="odd">
-<td class="rowlabel">Median [Min, Max]</td>
-<td>99.4 [84.6, 100]</td>
-<td>90.9 [22.9, 100]</td>
-<td>98.1 [16.2, 100]</td>
-<td>97.3 [69.3, 100]</td>
-<td>95.5 [3.00, 100]</td>
-<td>98.0 [1.00, 100]</td>
-<td>98.0 [1.00, 100]</td>
+<td style="text-align: left;">California</td>
+<td style="text-align: left;">871</td>
+<td style="text-align: left;">5652</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">68892072</td>
+<td style="text-align: left;">10435</td>
+<td style="text-align: left;">94.19 (8.79)</td>
+<td style="text-align: left;">96 (3)</td>
+<td style="text-align: left;">95.59 (7.29)</td>
+<td style="text-align: left;">98 (3)</td>
 </tr>
 <tr class="even">
-<td class="rowlabel lastrow">Missing</td>
-<td class="lastrow">0 (0%)</td>
-<td class="lastrow">59 (21.6%)</td>
-<td class="lastrow">2 (0.2%)</td>
-<td class="lastrow">148 (89.2%)</td>
-<td class="lastrow">1775 (36.2%)</td>
-<td class="lastrow">808 (6.4%)</td>
-<td class="lastrow">2792 (14.5%)</td>
+<td style="text-align: left;">Colorado</td>
+<td style="text-align: left;">17</td>
+<td style="text-align: left;">1300</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">8060420</td>
+<td style="text-align: left;">8686</td>
+<td style="text-align: left;">87.97 (12.59)</td>
+<td style="text-align: left;">91.3 (11.78)</td>
+<td style="text-align: left;">94.42 (8.72)</td>
+<td style="text-align: left;">98.11 (8.33)</td>
 </tr>
 <tr class="odd">
-<td class="rowlabel firstrow">Overall Vaccination Rate</td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
+<td style="text-align: left;">Connecticut</td>
+<td style="text-align: left;">18</td>
+<td style="text-align: left;">536</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">8687640</td>
+<td style="text-align: left;">15295</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.77 (4.34)</td>
+<td style="text-align: left;">97.86 (4.17)</td>
 </tr>
 <tr class="even">
-<td class="rowlabel">Mean (SD)</td>
-<td>NA (NA)</td>
-<td>NA (NA)</td>
-<td>88.1 (12.5)</td>
-<td>NA (NA)</td>
-<td>90.1 (12.0)</td>
-<td>93.2 (10.4)</td>
-<td>92.1 (11.1)</td>
+<td style="text-align: left;">Florida</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">2236</td>
+<td style="text-align: left;">24222830</td>
+<td style="text-align: left;">7976</td>
+<td style="text-align: left;">92.53 (8.67)</td>
+<td style="text-align: left;">94.37 (5.34)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr class="odd">
-<td class="rowlabel">Median [Min, Max]</td>
-<td>NA [NA, NA]</td>
-<td>NA [NA, NA]</td>
-<td>91.3 [7.35, 100]</td>
-<td>NA [NA, NA]</td>
-<td>95.0 [5.00, 100]</td>
-<td>96.0 [1.00, 100]</td>
-<td>95.0 [1.00, 100]</td>
+<td style="text-align: left;">Idaho</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">467</td>
+<td style="text-align: left;">1935653</td>
+<td style="text-align: left;">5993</td>
+<td style="text-align: left;">82.44 (15.59)</td>
+<td style="text-align: left;">86.67 (14.1)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr class="even">
-<td class="rowlabel lastrow">Missing</td>
-<td class="lastrow">47 (100%)</td>
-<td class="lastrow">273 (100%)</td>
-<td class="lastrow">4 (0.3%)</td>
-<td class="lastrow">166 (100%)</td>
-<td class="lastrow">3618 (73.7%)</td>
-<td class="lastrow">5306 (42.3%)</td>
-<td class="lastrow">9414 (48.9%)</td>
+<td style="text-align: left;">Illinois</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">3574</td>
+<td style="text-align: left;">23933484</td>
+<td style="text-align: left;">11122</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">97.07 (4.64)</td>
+<td style="text-align: left;">98.18 (2.52)</td>
 </tr>
 <tr class="odd">
-<td class="rowlabel firstrow">Enrollment</td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
-<td class="firstrow"></td>
+<td style="text-align: left;">Iowa</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">783</td>
+<td style="text-align: left;">5517359</td>
+<td style="text-align: left;">10352</td>
+<td style="text-align: left;">95.81 (4.73)</td>
+<td style="text-align: left;">96.9 (2.8)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr class="even">
-<td class="rowlabel">Mean (SD)</td>
-<td>NA (NA)</td>
-<td>73.3 (41.8)</td>
-<td>52.3 (46.6)</td>
-<td>NA (NA)</td>
-<td>27.4 (35.2)</td>
-<td>109 (127)</td>
-<td>87.8 (113)</td>
+<td style="text-align: left;">Maine</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">353</td>
+<td style="text-align: left;">2290535</td>
+<td style="text-align: left;">12055</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.55 (8.97)</td>
+<td style="text-align: left;">94.74 (8.24)</td>
 </tr>
 <tr class="odd">
-<td class="rowlabel">Median [Min, Max]</td>
-<td>NA [NA, NA]</td>
-<td>65.5 [21.0, 218]</td>
-<td>50.0 [1.00, 1110]</td>
-<td>NA [NA, NA]</td>
-<td>21.0 [1.00, 703]</td>
-<td>81.0 [1.00, 1250]</td>
-<td>67.0 [1.00, 1250]</td>
+<td style="text-align: left;">Massachusetts</td>
+<td style="text-align: left;">43</td>
+<td style="text-align: left;">784</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">13998163</td>
+<td style="text-align: left;">13778</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.92 (6.3)</td>
+<td style="text-align: left;">99 (3)</td>
 </tr>
 <tr class="even">
-<td class="rowlabel lastrow">Missing</td>
-<td class="lastrow">47 (100%)</td>
-<td class="lastrow">59 (21.6%)</td>
-<td class="lastrow">0 (0%)</td>
-<td class="lastrow">166 (100%)</td>
-<td class="lastrow">2568 (52.3%)</td>
-<td class="lastrow">3549 (28.3%)</td>
-<td class="lastrow">6389 (33.2%)</td>
+<td style="text-align: left;">Michigan</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1899</td>
+<td style="text-align: left;">15328155</td>
+<td style="text-align: left;">9456</td>
+<td style="text-align: left;">92.12 (6.81)</td>
+<td style="text-align: left;">93.5 (6.05)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Minnesota</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1112</td>
+<td style="text-align: left;">9987116</td>
+<td style="text-align: left;">10625</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">90.27 (11.57)</td>
+<td style="text-align: left;">93.92 (9.53)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Missouri</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">441</td>
+<td style="text-align: left;">8996869</td>
+<td style="text-align: left;">8890</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">91.14 (12.8)</td>
+<td style="text-align: left;">96 (8.6)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Montana</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">448</td>
+<td style="text-align: left;">1598517</td>
+<td style="text-align: left;">9688</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">93.87 (10.42)</td>
+<td style="text-align: left;">97.15 (5.72)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">New Jersey</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1982</td>
+<td style="text-align: left;">24349836</td>
+<td style="text-align: left;">16781</td>
+<td style="text-align: left;">95.31 (8.19)</td>
+<td style="text-align: left;">97.8 (5.6)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">New York</td>
+<td style="text-align: left;">1693</td>
+<td style="text-align: left;">1869</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">56656536</td>
+<td style="text-align: left;">19000</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.94 (10.9)</td>
+<td style="text-align: left;">99 (2.3)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">North Carolina</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1766</td>
+<td style="text-align: left;">12620939</td>
+<td style="text-align: left;">7468</td>
+<td style="text-align: left;">96.79 (7.52)</td>
+<td style="text-align: left;">100 (3)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">North Dakota</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">266</td>
+<td style="text-align: left;">1393844</td>
+<td style="text-align: left;">11519</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">92.84 (10.02)</td>
+<td style="text-align: left;">95.39 (8.9)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ohio</td>
+<td style="text-align: left;">404</td>
+<td style="text-align: left;">1584</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">20271944</td>
+<td style="text-align: left;">10558</td>
+<td style="text-align: left;">87.85 (14.29)</td>
+<td style="text-align: left;">92.86 (10.84)</td>
+<td style="text-align: left;">90.37 (12.66)</td>
+<td style="text-align: left;">94.63 (8.98)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Oklahoma</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">794</td>
+<td style="text-align: left;">4958496</td>
+<td style="text-align: left;">7114</td>
+<td style="text-align: left;">90.89 (9.86)</td>
+<td style="text-align: left;">94 (10)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Oregon</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">723</td>
+<td style="text-align: left;">6285584</td>
+<td style="text-align: left;">9867</td>
+<td style="text-align: left;">91.28 (7.71)</td>
+<td style="text-align: left;">93.4 (4.88)</td>
+<td style="text-align: left;">93.91 (6.34)</td>
+<td style="text-align: left;">95.55 (3.83)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Pennsylvania</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1635</td>
+<td style="text-align: left;">25955384</td>
+<td style="text-align: left;">13209</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">96.83 (4.51)</td>
+<td style="text-align: left;">97.9 (4)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rhode Island</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">215</td>
+<td style="text-align: left;">2297516</td>
+<td style="text-align: left;">14919</td>
+<td style="text-align: left;">94.87 (9.02)</td>
+<td style="text-align: left;">97.4 (6.7)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">South Dakota</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">363</td>
+<td style="text-align: left;">1185796</td>
+<td style="text-align: left;">7801</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.03 (9.92)</td>
+<td style="text-align: left;">100 (5.47)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Tennessee</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1004</td>
+<td style="text-align: left;">8294165</td>
+<td style="text-align: left;">7554</td>
+<td style="text-align: left;">94.95 (4.44)</td>
+<td style="text-align: left;">95.8 (4.9)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Texas</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">777</td>
+<td style="text-align: left;">43287224</td>
+<td style="text-align: left;">8152</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">93.11 (10.66)</td>
+<td style="text-align: left;">97.92 (9.68)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Utah</td>
+<td style="text-align: left;">33</td>
+<td style="text-align: left;">568</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">3931265</td>
+<td style="text-align: left;">5885</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">95.2 (5.4)</td>
+<td style="text-align: left;">96.34 (3.66)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vermont</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">338</td>
+<td style="text-align: left;">1536843</td>
+<td style="text-align: left;">17464</td>
+<td style="text-align: left;">91.58 (10.91)</td>
+<td style="text-align: left;">94.78 (6.95)</td>
+<td style="text-align: left;">94.58 (8.64)</td>
+<td style="text-align: left;">97.22 (5.11)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Virginia</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1413</td>
+<td style="text-align: left;">14385736</td>
+<td style="text-align: left;">10593</td>
+<td style="text-align: left;">93.8 (8.16)</td>
+<td style="text-align: left;">95.9 (6.9)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Washington</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1368</td>
+<td style="text-align: left;">12315163</td>
+<td style="text-align: left;">10428</td>
+<td style="text-align: left;">83.7 (15.23)</td>
+<td style="text-align: left;">87.76 (13.86)</td>
+<td style="text-align: left;">88.64 (12.59)</td>
+<td style="text-align: left;">92.16 (10.17)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Wisconsin</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1423</td>
+<td style="text-align: left;">9691073</td>
+<td style="text-align: left;">10180</td>
+<td style="text-align: left;">85.81 (12.45)</td>
+<td style="text-align: left;">90 (12)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 </tbody>
 </table>
 
+
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(my_table, <span class="at">file =</span> <span class="st">"vaccination_table.html"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+</section>
 
 </main>
 <!-- /main column -->
@@ -464,8 +719,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   });
   clipboard.on('success', onCopySuccess);
   if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
     const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
       text: getTextToCopy,
       container: window.document.getElementById('quarto-embedded-source-code-modal')
@@ -576,7 +829,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (window.Quarto?.typesetMath) {
         window.Quarto.typesetMath(note);
       }
-      // TODO in 1.5, we should make sure this works without a callout special case
       if (note.classList.contains("callout")) {
         return note.outerHTML;
       } else {
