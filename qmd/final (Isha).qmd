@@ -207,25 +207,44 @@ ggplot(missing_long, aes(x = reorder(state, -Count), y = Count, fill = School_Ty
 
 
 school_type_table <- vaccine_dat %>%
-  count(state, type_recode) %>%  
+  count(state, type_recode, useNA = "always") %>%  
   mutate(
     New_Category = case_when(
       type_recode %in% c("Public", "Kindergarten", "BOCES") ~ "Public",
       type_recode %in% c("Private", "Charter", "Nonpublic") ~ "Private",
-      TRUE ~ NA_character_ 
+      is.na(type_recode) ~ "Missing",  
+      TRUE ~ NA_character_
     )
   ) %>%
   group_by(state, New_Category) %>%
   summarise(Total_Schools = sum(n, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = New_Category, values_from = Total_Schools, values_fill = 0) %>%
   mutate(
-    total_schools = Private + Public,
+    total_schools = Private + Public + Missing,  
     prop_private = Private / total_schools,  
-    prop_public = Public / total_schools     
+    prop_public = Public / total_schools,  
+    prop_missing = Missing / total_schools  
   )
 
 
-school_type_table
+school_type_table <- school_type_table %>%
+  pivot_longer(cols = c(prop_private, prop_public, prop_missing), 
+               names_to = "School_Type", 
+               values_to = "Proportion")
+
+
+ggplot(school_type_table, aes(x = reorder(state, -Proportion), y = Proportion, fill = School_Type)) +
+  geom_bar(stat = "identity", position = "stack") +
+  coord_flip() +  
+  theme_minimal() +
+  labs(
+    title = "Proportion of Public vs. Private Schools (Including Missing Data) by State",
+    x = "State",
+    y = "Proportion of Schools"
+  ) +
+  scale_fill_manual(values = c("cadetblue", "lightsteelblue", "gray60"), 
+                    labels = c("Private", "Public", "Missing")) +
+  theme(axis.text.y = element_text(size = 8))
 
 
 ```
