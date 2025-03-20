@@ -25,7 +25,7 @@ theme_set(theme_bw(base_size = 20)) # Use black/white theme and increase font si
 ```{r}
 library(readr)
 library(dplyr)
-vaccine <- read_csv("vaccine.csv")
+vaccine <- read_csv("data/vaccine.csv")
 vaccine %>% colnames()
 
 
