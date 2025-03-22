@@ -144,6 +144,7 @@ model1 <- glmer(
 )
 
 summary(model1)
+ranef(model1)
 ```
 
 ### model 2: GLMM with county-level data
@@ -173,6 +174,7 @@ tictoc::toc()
 ```
 #### model 2b: with states with county-level data
 ```{r}
+#| eval: false
 model_overall_dat2b <- model_overall_dat %>% 
   filter(!is.na(county))
 
@@ -184,8 +186,15 @@ model2b <- brms::brm(p_overall ~ spend_person_scale + (1|state) + (1|county),
                          iter = 1000, # number of iterations, including burnin 
                          warmup = 200) # burnin  summary(nested.brms)
 tictoc::toc()
-summary(model2a)
 
-saveRDS(model2a,)
+saveRDS(model2b,file = here("model","model2b.rds"))
+```
+
+```{r}
+model2b <- readRDS(file = here("model","model2b.rds"))
+
+summary(model2b)
+
+ranef(model2b)$state
 
 ```
