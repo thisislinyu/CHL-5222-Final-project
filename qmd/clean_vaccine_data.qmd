@@ -15,6 +15,7 @@ library(MCMCglmm)
 library(brms)
 #library(geepack)
 library(car)
+library(here)
 #library(knitr)
 #library(kableExtra)
 library(table1)
@@ -40,7 +41,7 @@ theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font si
 ```{r}
 
 ## load dataset
-vaccine <- read_csv("data/vaccine.csv")
+vaccine <- read_csv(here("data","vaccine.csv"))
 
 
 ## clean dtaset
@@ -80,6 +81,11 @@ vaccine_mmr <- vaccine_dat %>%
 ## create overall vaccination dataset
 vaccine_overall <- vaccine_dat %>%
   filter(!is.na(overall_recode))
+
+saveRDS(vaccine_mmr,file = here("data/vaccine_mmr.rds"))
+
+saveRDS(vaccine_overall,file = here("data/vaccine_overall.rds"))
+
 
 ```
 
