@@ -184,6 +184,8 @@ model2b <- brms::brm(p_overall ~ spend_person_scale + (1|state) + (1|county),
                          iter = 1000, # number of iterations, including burnin 
                          warmup = 200) # burnin  summary(nested.brms)
 tictoc::toc()
+summary(model2a)
 
+saveRDS(model2a,)
 
 ```
