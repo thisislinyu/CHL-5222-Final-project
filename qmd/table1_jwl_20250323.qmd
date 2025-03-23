@@ -34,41 +34,6 @@ vaccine <- read_csv("vaccine.csv")
 ### Data cleaning made by Lin
 
 ```{r}
-county_total <- c(
-  Arizona = 15, 
-  Arkansas = 75, 
-  Connecticut = 8, 
-  Illinois = 102, 
-  Maine = 16, 
-  Massachusetts = 14, 
-  Minnesota = 87, 
-  Missouri = 114, 
-  Montana = 56, 
-  New_York = 62, 
-  North_Dakota = 53, 
-  Pennsylvania = 67, 
-  South_Dakota = 66, 
-  Texas = 254, 
-  Utah = 29, 
-  Florida = 67, 
-  Idaho = 44, 
-  Iowa = 99, 
-  Michigan = 83, 
-  New_Jersey = 21, 
-  North_Carolina = 100, 
-  Oklahoma = 77, 
-  Rhode_Island = 5, 
-  Tennessee = 95, 
-  Virginia = 95, 
-  Wisconsin = 72, 
-  California = 58, 
-  Colorado = 64, 
-  Ohio = 88, 
-  Oregon = 36, 
-  Vermont = 14, 
-  Washington = 39
-)
-
 ## clean dtaset
 vaccine_dat <- vaccine %>% 
   
