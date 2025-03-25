@@ -1,5 +1,5 @@
 ---
-title: "Clean vaccine dataset for Poisson regression"
+title: "Clean vaccine dataset"
 format:
   html
 ---
@@ -29,14 +29,7 @@ theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font si
 
 ```
 
-### Read data
-
-```{r}
-
-```
-
-
-### Data cleaning made by Lin
+### Data cleaning
 
 ```{r}
 
@@ -70,17 +63,28 @@ vaccine_dat <- vaccine %>%
   arrange(state, county, city, name) %>%
   mutate(school_id = row_number()) %>%
   
+  # recode county = "#N/A" as missing
+  mutate(county = if_else(county == "#N/A", NA, county)) %>%  
+  
   # create variable for whether the state has county-level data
-  mutate(has_county = if_else(!is.na(county),1,0))
+  mutate(has_county = if_else(!is.na(county), 1, 0)) %>%
+  
+  # standardize with uppercase
+  mutate(county = toupper(county)) %>%
+  mutate(state = toupper(state))
 
 
 ## create MMR dataset
 vaccine_mmr <- vaccine_dat %>%
-  filter(!is.na(mmr_recode))
+  filter(!is.na(mmr_recode)) %>%
+  # log10 transformation for negative skew
+  mutate(log10_mmr = log10(max(mmr_recode+1) - mmr_recode))
 
 ## create overall vaccination dataset
 vaccine_overall <- vaccine_dat %>%
-  filter(!is.na(overall_recode))
+  filter(!is.na(overall_recode)) %>%
+  # log10 transformation for negative skew
+  mutate(log10_overall = log10(max(overall_recode+1) - overall_recode))
 
 saveRDS(vaccine_mmr,file = here("data/vaccine_mmr.rds"))
 
