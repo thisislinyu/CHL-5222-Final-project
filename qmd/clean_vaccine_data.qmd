@@ -21,6 +21,7 @@ library(here)
 library(table1)
 library(readr)
 library(dplyr)
+library(moments)
 #library(sf)
 library(tigris)
 knitr::opts_knit$set(root.dir = here())
@@ -100,7 +101,13 @@ saveRDS(vaccine_mmr,file = here("data/vaccine_mmr.rds"))
 
 saveRDS(vaccine_overall,file = here("data/vaccine_overall.rds"))
 
+### for skewness
 ## resource used for data transformations for skewness: https://www.datanovia.com/en/lessons/transform-data-to-normal-distribution-in-r/
+vaccine_overall$overall_recode %>% density() %>% plot()
+skewness(vaccine_overall$overall_recode, na.rm = TRUE)
+
+vaccine_overall$log10_overall %>% density() %>% plot()
+skewness(vaccine_overall$log10_overall, na.rm = TRUE)
 
 ```
 
