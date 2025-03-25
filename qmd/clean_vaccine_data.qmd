@@ -37,7 +37,7 @@ theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font si
 vaccine <- read_csv(here("data","vaccine.csv"))
 
 
-## clean dtaset
+## clean dataset
 vaccine_dat <- vaccine %>% 
   
   # recode vaccination coverage rates with -1 as missing
@@ -58,20 +58,30 @@ vaccine_dat <- vaccine %>%
   
   # create state spending per pupil variable
   mutate(spend_person = round(statespending2016/schagepop2016, 0)) %>%
-  
-  # create unique school id
-  arrange(state, county, city, name) %>%
-  mutate(school_id = row_number()) %>%
-  
-  # recode county = "#N/A" as missing
-  mutate(county = if_else(county == "#N/A", NA, county)) %>%  
-  
-  # create variable for whether the state has county-level data
-  mutate(has_county = if_else(!is.na(county), 1, 0)) %>%
+
+ # replicate Nhat's data cleaning for county name
+  mutate(county = case_when(
+    county == "State Of Illinois" ~ NA_character_,
+    county == "BLAINE" ~ "Blaine",
+    county == "ADA" ~ "Ada",
+    county == "#N/A" ~ NA_character_,
+    county == "Oklahoma/Tulsa" ~ "Oklahoma",
+    county == "Walwroth" ~ "Walworth",
+    county == "adams" ~ "Adams",
+    county == "Colorado BOCS" ~ "Denver",
+    county == "New Hampshire" ~ NA_character_,
+    TRUE ~ county)) %>%
   
   # standardize with uppercase
   mutate(county = toupper(county)) %>%
-  mutate(state = toupper(state))
+  mutate(state = toupper(state)) %>%
+
+  # create variable for whether the state has county-level data
+  mutate(has_county = if_else(!is.na(county), 1, 0)) %>%
+    
+  # create unique school id
+  arrange(state, county, city, name) %>%
+  mutate(school_id = row_number())
 
 
 ## create MMR dataset
@@ -97,7 +107,7 @@ saveRDS(vaccine_overall,file = here("data/vaccine_overall.rds"))
 
 
 $$
-\text{log}E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{State electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ +\epsilon_{jk}
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{State electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ +\epsilon_{jk}
 $$
 where Y is vaccination rate (Overall and MMR) for *i*th school in *j*th county and *k*th state (rate),
 State spending is in US dollars per student of the *k*th state (continuous),
