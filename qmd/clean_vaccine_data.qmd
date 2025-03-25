@@ -100,6 +100,7 @@ saveRDS(vaccine_mmr,file = here("data/vaccine_mmr.rds"))
 
 saveRDS(vaccine_overall,file = here("data/vaccine_overall.rds"))
 
+## resource used for data transformations for skewness: https://www.datanovia.com/en/lessons/transform-data-to-normal-distribution-in-r/
 
 ```
 
