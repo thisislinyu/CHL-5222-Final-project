@@ -1,0 +1,693 @@
+---
+title: "Fit linear mixed effects model and diagnostics"
+format:
+  html
+---
+
+```{r, message=FALSE}
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(moments) # for skewness() function
+#library(MCMCglmm)
+#library(brms)
+#library(geepack)
+library(car)
+#library(knitr)
+#library(kableExtra)
+#library(table1)
+library(readr)
+library(dplyr)
+#library(sf)
+library(tigris)
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font size for all ggplot figures
+
+```
+
+### Data cleaning 
+
+```{r}
+
+## load dataset
+vaccine <- read_csv("data/vaccine.csv")
+
+## clean dtaset
+vaccine_dat <- vaccine %>% 
+  
+  # recode vaccination coverage rates with -1 as missing
+  mutate(overall_recode = ifelse(overall == -1, NA, overall),
+         mmr_recode = ifelse(mmr == -1, NA, mmr)) %>%   
+  
+  # recode missing or 2017 school year as 2017-2018 (as per dataset description)
+  mutate(year_recode = case_when(
+    year == "null" ~ "2017-18",
+    year == "2017" ~ "2017-18",
+    TRUE ~ year)) %>%
+  
+  # recode school type into public and private schools
+  mutate(type_recode = case_when(
+    type == "BOCES" | type == "Kindergarten" | type == "Public" ~ "Public",
+    type == "Charter" | type == "Nonpublic" | type == "Private" ~ "Private",
+    TRUE ~ type)) %>%
+  
+  # create state spending per pupil variable (in US$1million) --> stops the lmer() warning about different scales
+  mutate(spend_person = round(statespending2016/schagepop2016/1000, 2)) %>%
+  
+ # replicate Nhat's data cleaning for county name
+  mutate(county = case_when(
+    county == "State Of Illinois" ~ NA_character_,
+    county == "BLAINE" ~ "Blaine",
+    county == "ADA" ~ "Ada",
+    county == "#N/A" ~ NA_character_,
+    county == "Oklahoma/Tulsa" ~ "Oklahoma",
+    county == "Walwroth" ~ "Walworth",
+    county == "adams" ~ "Adams",
+    county == "Colorado BOCS" ~ "Denver",
+    county == "New Hampshire" ~ NA_character_,
+    TRUE ~ county)) %>%
+  
+  # standardize with uppercase
+  mutate(county = toupper(county)) %>%
+  mutate(state = toupper(state)) %>%
+
+  # create variable for whether the state has county-level data
+  mutate(has_county = if_else(!is.na(county), 1, 0)) %>%
+    
+  # create unique school id
+  arrange(state, county, city, name) %>%
+  mutate(school_id = row_number())
+
+
+## create MMR dataset
+vaccine_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  ## log transformation for negative skew
+  #mutate(log_mmr = log(mmr_recode)) %>%
+  #mutate(sqrt_mmr = sqrt(max(mmr_recode+1) - mmr_recode)) %>%
+  mutate(log10_mmr = log10(max(mmr_recode+1) - mmr_recode)) #%>% #this one works best
+  #mutate(inverse_mmr = 1/(max(mmr_recode+1) - mmr_recode))
+
+## create overall vaccination dataset
+vaccine_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  ## log transformation for negative skew
+  #mutate(log_overall = log(overall_recode)) %>%
+  #mutate(sqrt_overall = sqrt(max(overall_recode+1) - overall_recode)) %>%
+  mutate(log10_overall = log10(max(overall_recode+1) - overall_recode)) #%>% #this one works best
+  #mutate(inverse_overall = 1/(max(overall_recode+1) - overall_recode))
+
+## resource for data transformations for skewness: https://www.datanovia.com/en/lessons/transform-data-to-normal-distribution-in-r/
+
+```
+
+## Examine skewness
+
+```{r, include = FALSE}
+
+## density plots
+summary(vaccine_overall$overall_recode)
+skewness(vaccine_overall$overall_recode, na.rm = TRUE)
+vaccine_overall$overall_recode %>% density() %>% plot()
+
+ggplot(vaccine_overall, aes(x = overall_recode)) +
+  geom_density(fill = "skyblue", alpha = 0.7) +
+  labs(title = "Kernel Density Plot of Overall Vaccination Rate per School",
+       x = "Overall Vaccination Rate",
+       y = "Density")
+
+vaccine_overall$log_overall %>% density() %>% plot()
+skewness(vaccine_overall$log_overall, na.rm = TRUE)
+
+vaccine_overall$sqrt_overall %>% density() %>% plot()
+skewness(vaccine_overall$sqrt_overall, na.rm = TRUE)
+
+vaccine_overall$log10_overall %>% density() %>% plot()
+skewness(vaccine_overall$log10_overall, na.rm = TRUE)
+
+vaccine_overall$inverse_overall %>% density() %>% plot()
+skewness(vaccine_overall$inverse_overall, na.rm = TRUE)
+
+## Log10 transformation resulted in the least skewness
+
+```
+
+
+### Fit Linear Mixed Effects model: Overall vaccination rates
+
+## Fit base model (marginal mean response)
+
+$$
+E(Y_{ijk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i
+$$
+
+```{r, include = FALSE}
+
+## 1a. fit linear regression model
+lr <- lm(overall_recode ~ spend_person + year_recode, data = vaccine_overall)
+summary(lr)
+anova(lr)
+
+# check normality of residuals --> very skewed
+#qqnorm(residuals(lr), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lr), col="red")
+
+
+```
+
+```{r}
+
+## 1b. fit linear regression model with log-transformed response
+lr_log <- lm(log10_overall ~ spend_person + year_recode, data = vaccine_overall)
+summary(lr_log)
+
+# check normality of residuals
+#qqnorm(residuals(lr_log), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lr_log), col="red")
+
+```
+
+
+## Fit linear mixed effects model with random intercept for county and state (three-level model)
+
+$$
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ 
+$$
+where Y is vaccination rate (Overall and MMR) for *i*th school in *j*th county and *k*th state (continuous),
+State spending is in US dollars per student of the *k*th state (continuous),
+School year of the *i*th school (categorical, with 2017-18 as reference category),
+${b}_k$ is the random effect of the *k*th state (level 3),
+${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
+
+```{r}
+
+## 2a. fit 3-level LMM model
+lmm3 <- lmer(overall_recode ~ spend_person + year_recode + (1 | state) + (1 | county),
+                data = vaccine_overall)
+#options(scipen=999)
+summary(lmm3)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm3, oldNames = FALSE)
+
+# check normality of residuals --> very skewed
+#qqnorm(residuals(lmm3), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lmm3), col="red")
+
+```
+
+```{r}
+
+## 2b. fit 3-level LMM model excluding schools with missing county
+vac_overall_county <- vaccine_overall %>%
+  filter(has_county==1) %>%
+  mutate(spend_person = spend_person / 1000)
+
+lmm3county <- lmer(overall_recode ~ spend_person + year_recode + (1 | state) + (1 | county),
+                data = vac_overall_county)
+#options(scipen=999)
+summary(lmm3county)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm3, oldNames = FALSE)
+
+
+##** results are identical --> can exclude this model **
+
+```
+
+```{r}
+
+## 2c. fit 3-level LMM model with log-transformed response
+lmm3log <- lmer(log10_overall ~ spend_person + year_recode + (1 | state) + (1 | county),
+                data = vaccine_overall)
+#options(scipen=999)
+summary(lmm3log)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm3log, oldNames = FALSE)
+
+```
+
+
+## Fit linear mixed effects model with random intercept for state (two-level model)
+
+$$
+E(Y_{ijk}|b_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + {b}_k\ 
+$$
+
+```{r}
+
+## 3a. fit 2-level LMM model
+lmm2 <- lmer(overall_recode ~ spend_person + year_recode + (1 | state), data = vaccine_overall)
+summary(lmm2)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2, oldNames = FALSE)
+
+# check residuals --> very skewed
+#qqnorm(residuals(lmm2), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lmm2), col="red")
+
+```
+
+```{r}
+
+## 3b. fit 2-level LMM model with log-transformed response
+lmm2log <- lmer(log10_overall ~ spend_person + (1 | state), data = vaccine_overall, 
+                REML = TRUE, 
+                na.action = na.exclude)
+summary(lmm2log)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2log, oldNames = FALSE)
+
+```
+
+
+## Fit linear mixed effects model with random intercept for county and state (three-level model) with covariate state electoral college (Barret's part)
+
+$$ 
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ +\epsilon_{jk} 
+$$
+where Y is vaccination rate (Overall and MMR) for *i*th school in *j*th county and *k*th state (rate),
+State spending is in US dollars per student of the *k*th state (continuous),
+School year of the *i*th school (categorical, with 2017-18 as reference category),
+State electoral college of the *k*th state is a categorical variable (Democrat, Republican, swing state),
+${b}_k$ is the random effect of the *k*th state (level 3),
+${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
+
+
+
+## Compare three-level and two-level models using AIC and BIC
+
+```{r}
+
+## used this resource: https://stackoverflow.com/questions/70642232/how-to-extract-information-criterions-from-lme4lmer-model-fitted-by-ml-and-c
+
+## extract AIC and BIC from two-level model
+info_crit2 <- data.frame(
+            "AIC" = AIC(lmm2),
+            "BIC" = BIC(lmm2)) %>%
+  mutate(Model = "Two-level")
+
+## extract AIC and BIC from three-level model
+info_crit_table <- data.frame(
+  "AIC" = AIC(lmm3),
+  "BIC" = BIC(lmm3)) %>%
+  mutate(Model = "Three-level") %>%
+  # add values from two-level model
+  rbind(info_crit2)
+info_crit_table
+
+##** the 3-level model has lowest AIC and BIC **
+
+
+```
+
+## Check model diagnostics
+```{r}
+
+##** Do we need to check stage-one residuals (Cholesky decomposition)? We are not looking at repeated observations among schools. **
+
+# obtain standardized stage-one residuals (school-level)
+condmean <- predict(lmm3) # obtain conditional means
+y <- vaccine_overall$overall_recode
+stg1r <- y - condmean
+estsigma2 <- sigma(lmm3)^2
+estsigmamat <- estsigma2 * diag(dim(vaccine_overall)[1])
+L <- chol(estsigmamat) # this take a long time
+stg1rstar <- solve(L) %*% stg1r
+head(stg1rstar)
+
+## compare raw stage-one residuals and standardized residuals
+rtype <- c(rep("Raw", length(stg1r)), rep("Standardized", length(stg1r)))
+resid <- c(stg1r, stg1rstar)
+stg1resids <- as.data.frame(cbind(rtype, as.numeric(resid)))
+
+# create plot
+ggplot(stg1resids, aes(x = resid, fill = rtype)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  labs(y = "Count", x = "Residuals", fill = "Type")
+
+## QQ Plot of standardized residuals
+
+## Plot standardized residuals against predicted mean
+
+```
+
+```{r}
+## check normality of residuals
+qqnorm(residuals(lmm3), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3), col="red")
+```
+
+```{r}
+## Normal qqplot of the random effects: county-level random effects
+bjkhat <- ranef(lmm3, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+##** skewed on the left **
+
+```
+
+
+```{r}
+
+## Normal qqplot of the random effects: state-level random effects
+bkhat <- ranef(lmm3, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+##** looks fairly normal **
+
+```
+
+```{r}
+
+## Histogram of county random effects residuals
+ranef(lmm3)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+##** looks fairly normally distributed **
+
+```
+
+```{r}
+
+## Histogram of state random effects residuals
+ranef(lmm3)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+##** looks acceptable **
+
+```
+
+
+
+
+## Intra-class clustering
+
+```{r}
+
+## used this resource: https://stackoverflow.com/questions/8526681/extract-random-effect-variances-from-lme4-mer-model-object
+
+## extract random effects variances
+re_variance <- as.data.frame(VarCorr(lmm3))
+
+# create vector for county random effect variance
+re_var_county <- re_variance %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state <- re_variance %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid <- re_variance %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in different counties but within the same state
+corr_state <- re_var_state / (re_var_resid + re_var_state + re_var_county)
+corr_state
+
+## correlation between two schools in the same county within the same state
+corr_county_state <- (re_var_county + re_var_state) / (re_var_resid + re_var_state + re_var_county)
+corr_county_state
+
+## correlation between two schools in different counties = 0
+
+
+```
+
+
+
+### Fit Linear Mixed Effects model: MMR vaccination rates
+
+## Examine skewness
+
+```{r, include = FALSE}
+
+## density plots
+summary(vaccine_mmr$mmr_recode)
+skewness(vaccine_mmr$mmr_recode, na.rm = TRUE)
+vaccine_mmr$mmr_recode %>% density() %>% plot()
+
+ggplot(vaccine_mmr, aes(x = mmr_recode)) +
+  geom_density(fill = "skyblue", alpha = 0.7) +
+  labs(title = "Kernel Density Plot of Overall Vaccination Rate per School",
+       x = "Overall Vaccination Rate",
+       y = "Density")
+
+vaccine_mmr$log_mmr %>% density() %>% plot()
+skewness(vaccine_mmr$log_mmr, na.rm = TRUE)
+
+vaccine_mmr$sqrt_mmr %>% density() %>% plot()
+skewness(vaccine_mmr$sqrt_mmr, na.rm = TRUE)
+
+vaccine_mmr$log10_mmr %>% density() %>% plot()
+skewness(vaccine_mmr$log10_mmr, na.rm = TRUE)
+
+vaccine_mmr$inverse_mmr %>% density() %>% plot()
+skewness(vaccine_mmr$inverse_mmr, na.rm = TRUE)
+
+## log10 transformation results in most normal distribution
+
+```
+
+
+## Fit base model (marginal mean response)
+
+```{r, include = FALSE}
+
+## 4a. fit linear regression model
+lr_mmr <- lm(mmr_recode ~ spend_person + year_recode, data = vaccine_mmr)
+summary(lr_mmr)
+anova(lr_mmr)
+
+# check normality of residuals --> very skewed
+#qqnorm(residuals(lr_mmr), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lr_mmr), col="red")
+
+
+```
+
+
+```{r}
+
+## 4b. fit linear regression model with log-transformed response
+lr_mmr_log <- lm(log10_mmr ~ spend_person + year_recode, data = vaccine_mmr)
+summary(lr_mmr_log)
+
+# check normality of residuals
+#qqnorm(residuals(lr_mmr_log), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lr_mmr_log), col="red")
+
+```
+
+
+## Fit linear mixed effects model with random intercept for county and state (three-level model)
+
+```{r}
+
+## 5a. fit 3-level LMM model
+lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + (1 | state) + (1 | county),
+                data = vaccine_mmr)
+#options(scipen=999)
+summary(lmm3mmr)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm3mmr, oldNames = FALSE)
+
+# check normality of residuals --> very skewed
+#qqnorm(residuals(lmm3mmr), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lmm3mmr), col="red")
+
+```
+
+```{r}
+
+## 5b. fit 3-level LMM model with log-transformed response
+lmm3mmrlog <- lmer(log10_mmr ~ spend_person + year_recode + (1 | state) + (1 | county),
+                data = vaccine_mmr)
+#options(scipen=999)
+summary(lmm3mmrlog)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm3mmrlog, oldNames = FALSE)
+
+```
+
+## Fit linear mixed effects model with random intercept for state (two-level model)
+
+```{r}
+
+## 6a. fit 2-level LMM model
+lmm2mmr <- lmer(mmr_recode ~ spend_person + year_recode + (1 | state), data = vaccine_mmr)
+summary(lmm2mmr)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2mmr, oldNames = FALSE)
+
+# check residuals --> very skewed
+#qqnorm(residuals(lmm2mmr), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lmm2mmr), col="red")
+
+```
+
+```{r}
+
+## 6b. fit 2-level LMM model with log-transformed response
+lmm2mmrlog <- lmer(log10_mmr ~ spend_person + (1 | state), data = vaccine_mmr, 
+                REML = TRUE, 
+                na.action = na.exclude)
+summary(lmm2mmrlog)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2mmrlog, oldNames = FALSE)
+
+```
+
+### Compare three-level and two-level models using AIC and BIC
+
+```{r}
+
+## used this resource: https://stackoverflow.com/questions/70642232/how-to-extract-information-criterions-from-lme4lmer-model-fitted-by-ml-and-c
+
+## extract AIC and BIC from two-level model
+info_crit_mmr2 <- data.frame(
+            "AIC" = AIC(lmm2mmr),
+            "BIC" = BIC(lmm2mmr)) %>%
+  mutate(Model = "Two-level")
+
+## extract AIC and BIC from three-level model
+info_crit_table_mmr <- data.frame(
+  "AIC" = AIC(lmm3mmr),
+  "BIC" = BIC(lmm3mmr)) %>%
+  mutate(Model = "Three-level") %>%
+  # add values from two-level model
+  rbind(info_crit_mmr2)
+info_crit_table_mmr
+
+##** the 3-level model has lowest AIC and BIC **
+
+
+```
+
+## Check model diagnostics
+```{r}
+## check normality of residuals
+qqnorm(residuals(lmm3mmr), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3mmr), col="red")
+
+##** skewed on the left **
+
+```
+
+```{r}
+## Normal qqplot of the random effects: county-level random effects
+bjkhat <- ranef(lmm3mmr, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+##** slightly skewed on the left **
+
+```
+
+
+```{r}
+
+## Normal qqplot of the random effects: state-level random effects
+bkhat <- ranef(lmm3mmr, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+##** looks fairly normal with single outliers at left and right **
+
+```
+
+```{r}
+
+## Histogram of county random effects residuals
+ranef(lmm3mmr)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+##** looks fairly normally distributed around 0 with long left tail **
+
+```
+
+```{r}
+
+## Histogram of state random effects residuals
+ranef(lmm3mmr)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+##** looks acceptable **
+
+```
+
+## Intra-class clustering
+
+```{r}
+
+## used this resource: https://stackoverflow.com/questions/8526681/extract-random-effect-variances-from-lme4-mer-model-object
+
+## extract random effects variances
+re_variance <- as.data.frame(VarCorr(lmm3mmr))
+
+# create vector for county random effect variance
+re_var_county <- re_variance %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state <- re_variance %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid <- re_variance %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in different counties but within the same state
+corr_state_mmr <- re_var_state / (re_var_resid + re_var_state + re_var_county)
+corr_state_mmr
+
+## correlation between two schools in the same county within the same state
+corr_county_state_mmr <- (re_var_county + re_var_state) / (re_var_resid + re_var_state + re_var_county)
+corr_county_state_mmr
+
+## correlation between two schools in different counties = 0
+
+
+```
