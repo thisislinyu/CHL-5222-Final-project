@@ -137,6 +137,46 @@ skewness(vaccine_overall$inverse_overall, na.rm = TRUE)
 ```
 
 
+Add State political status as covariate
+```{r}
+
+unique_states <- unique(vaccine_overall$state)
+
+STATE_POLITICAL_MAP <- list(
+  "CALIFORNIA" = 2,   # Blue is 2
+  "COLORADO" = 2,     
+  "FLORIDA" = 3,      # purple is 3 (swing)
+  "IDAHO" = 1,        # Red is 1
+  "IOWA" = 1,         
+  "MICHIGAN" = 1,     
+  "NEW JERSEY" = 2,   
+  "NORTH CAROLINA" = 3, 
+  "OHIO" = 1,         
+  "OKLAHOMA" = 1,     
+  "OREGON" = 2,       
+  "RHODE ISLAND" = 2, 
+  "TENNESSEE" = 1,    
+  "VERMONT" = 2,      
+  "VIRGINIA" = 2,     
+  "WASHINGTON" = 2,  
+  "WISCONSIN" = 3     
+)
+
+vaccine_overall$state_political_vote <- sapply(vaccine_overall$state, function(x) {
+  result <- STATE_POLITICAL_MAP[[x]]
+  if (is.null(result)) {
+    print(paste("No mapping found for state:", x))
+    return(NA)
+  }
+  return(result)
+})
+
+
+```
+
+
+
+
 ### Fit Linear Mixed Effects model: Overall vaccination rates
 
 ## Fit base model (marginal mean response)
@@ -158,6 +198,15 @@ anova(lr)
 
 
 ```
+
+Adding in state political vote
+
+```{r}
+lr <- lm(overall_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_overall)
+summary(lr)
+anova(lr)
+```
+
 
 ```{r}
 
@@ -201,6 +250,19 @@ confint(lmm3, oldNames = FALSE)
 
 ```
 
+
+```{r}
+#adding state vote
+lmm3 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
+             data = vaccine_overall)
+
+
+summary(lmm3)
+
+```
+
+
+
 ```{r}
 
 ## 2b. fit 3-level LMM model excluding schools with missing county
@@ -235,6 +297,9 @@ summary(lmm3log)
 confint(lmm3log, oldNames = FALSE)
 
 ```
+
+
+
 
 
 ## Fit linear mixed effects model with random intercept for state (two-level model)
@@ -285,6 +350,69 @@ School year of the *i*th school (categorical, with 2017-18 as reference category
 State electoral college of the *k*th state is a categorical variable (Democrat, Republican, swing state),
 ${b}_k$ is the random effect of the *k*th state (level 3),
 ${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
+
+
+```{r}
+lmm2_p <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state), 
+             data = vaccine_overall)
+summary(lmm2_p)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2_p, oldNames = FALSE)
+
+## 3b. fit 2-level LMM model with log-transformed response and state political vote
+lmm2log_p <- lmer(log10_overall ~ spend_person + state_political_vote + (1 | state), 
+                data = vaccine_overall, 
+                REML = TRUE, 
+                na.action = na.exclude)
+summary(lmm2log_p)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2log_p, oldNames = FALSE)
+
+lmm3_p_c <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1| county), 
+             data = vaccine_overall)
+summary(lmm2_p_c)
+
+
+lmm3log_p_c <- lmer(log10_overall ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county), 
+                    data = vaccine_overall, 
+                    REML = TRUE, 
+                    na.action = na.exclude)
+
+summary(lmm3log_p_c)
+
+confint(lmm3log_p_c, oldNames = FALSE)
+
+# Model comparison
+model_comparison <- data.frame(
+  Model = c("Two-Level Original", 
+            "Log-Transformed Two-Level", 
+            "Three-Level Original", 
+            "Log-Transformed Three-Level"),
+  AIC = c(AIC(lmm2_p), 
+          AIC(lmm2log_p), 
+          AIC(lmm3_p_c), 
+          AIC(lmm3log_p_c)),
+  BIC = c(BIC(lmm2_p), 
+          BIC(lmm2log_p), 
+          BIC(lmm3_p_c), 
+          BIC(lmm3log_p_c))
+)
+
+print(model_comparison)
+
+# QQ Plot of residuals
+qqnorm(residuals(lmm3log_p_c), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3log_p_c), col="red")
+
+# Histogram of residuals
+hist(residuals(lmm3log_p_c), main="Histogram of Residuals")
+```
+
+
 
 
 
@@ -596,6 +724,69 @@ info_crit_table_mmr
 
 
 ```
+
+## Adding in Political Vote
+
+```{r}
+lmm2_p <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), 
+             data = vaccine_overall)
+summary(lmm2_p)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2_p, oldNames = FALSE)
+
+## 3b. fit 2-level LMM model with log-transformed response and state political vote
+lmm2log_p <- lmer(log10_mmr ~ spend_person + state_political_vote + (1 | state), 
+                data = vaccine_overall, 
+                REML = TRUE, 
+                na.action = na.exclude)
+summary(lmm2log_p)
+
+## obtain confidence intervals
+#options(scipen=999)
+confint(lmm2log_p, oldNames = FALSE)
+
+lmm3_p_c <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1| county), 
+             data = vaccine_overall)
+summary(lmm2_p_c)
+
+
+lmm3log_p_c <- lmer(log10_mmr ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county), 
+                    data = vaccine_overall, 
+                    REML = TRUE, 
+                    na.action = na.exclude)
+
+summary(lmm3log_p_c)
+
+confint(lmm3log_p_c, oldNames = FALSE)
+
+# Model comparison
+model_comparison <- data.frame(
+  Model = c("Two-Level Original", 
+            "Log-Transformed Two-Level", 
+            "Three-Level Original", 
+            "Log-Transformed Three-Level"),
+  AIC = c(AIC(lmm2_p), 
+          AIC(lmm2log_p), 
+          AIC(lmm3_p_c), 
+          AIC(lmm3log_p_c)),
+  BIC = c(BIC(lmm2_p), 
+          BIC(lmm2log_p), 
+          BIC(lmm3_p_c), 
+          BIC(lmm3log_p_c))
+)
+
+print(model_comparison)
+
+# QQ Plot of residuals
+qqnorm(residuals(lmm3log_p_c), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3log_p_c), col="red")
+
+# Histogram of residuals
+hist(residuals(lmm3log_p_c), main="Histogram of Residuals")
+```
+
 
 ## Check model diagnostics
 ```{r}
