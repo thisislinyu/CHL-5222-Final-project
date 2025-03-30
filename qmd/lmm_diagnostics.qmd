@@ -174,7 +174,25 @@ vaccine_overall$state_political_vote <- sapply(vaccine_overall$state, function(x
 
 ```
 
+```{r}
+state_values <- unlist(STATE_POLITICAL_MAP)
 
+counts <- table(state_values)
+print(counts)
+
+names(counts) <- c("Republican", "Democratic", "Swing")
+
+barplot(counts,
+        col = c("red", "blue", "purple"),
+        main = "State Political Affiliation",
+        ylab = "Number of States",
+        xlab = "Political Category",
+        cex.main = 4,  # Increase title size
+        cex.axis = 2,  # Increase axis tick label size
+        cex.names = 3) # Increase category label size
+
+
+```
 
 
 ### Fit Linear Mixed Effects model: Overall vaccination rates
@@ -374,8 +392,8 @@ confint(lmm2log_p, oldNames = FALSE)
 
 lmm3_p_c <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1| county), 
              data = vaccine_overall)
-summary(lmm2_p_c)
-
+summary(lmm3_p_c)
+confint(lmm3_p_c,oldNames=FALSE)
 
 lmm3log_p_c <- lmer(log10_overall ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county), 
                     data = vaccine_overall, 
@@ -728,8 +746,57 @@ info_crit_table_mmr
 ## Adding in Political Vote
 
 ```{r}
+STATE_POLITICAL_MAP <- list(
+  "ARIZONA" = 3,
+  "ARKANSAS" = 1,
+
+  "CALIFORNIA" = 2,   # Blue is 2
+  "COLORADO" = 2,
+  "CONNECTICUT" = 2,     
+  "FLORIDA" = 3,      # purple is 3 (swing)
+  "IDAHO" = 1,        # Red is 1
+  "IOWA" = 1,
+  "ILLINOIS" = 2,
+  "MAINE" = 3, 
+  "MASSACHUSETTS" = 2,        
+  "MICHIGAN" = 1,
+  "MISSOURI" = 1, 
+  "MINNESOTA" = 3, 
+  "MONTANA" = 1,   
+  "NEW JERSEY" = 2,   
+  "NORTH CAROLINA" = 3, 
+  "OHIO" = 1, 
+  "NEW YORK" = 2,        
+  "OKLAHOMA" = 1,     
+  "OREGON" = 2,  
+  "PENNSYLVANIA" = 3,     
+  "RHODE ISLAND" = 2, 
+  "SOUTH DAKOTA" = 1,
+  "NORTH DAKOTA" = 1,
+  "TEXAS" =1,
+  "UTAH" = 1,
+  "TENNESSEE" = 1,    
+  "VERMONT" = 2,      
+  "VIRGINIA" = 2,     
+  "WASHINGTON" = 2,  
+  "WISCONSIN" = 3     
+)
+
+vaccine_mmr$state_political_vote <- sapply(vaccine_mmr$state, function(x) {
+  result <- STATE_POLITICAL_MAP[[x]]
+  if (is.null(result)) {
+    print(paste("No mapping found for state:", x))
+    return(NA)
+  }
+  return(result)
+})
+
+```
+
+
+```{r}
 lmm2_p <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), 
-             data = vaccine_overall)
+             data = vaccine_mmr)
 summary(lmm2_p)
 
 ## obtain confidence intervals
@@ -738,7 +805,7 @@ confint(lmm2_p, oldNames = FALSE)
 
 ## 3b. fit 2-level LMM model with log-transformed response and state political vote
 lmm2log_p <- lmer(log10_mmr ~ spend_person + state_political_vote + (1 | state), 
-                data = vaccine_overall, 
+                data = vaccine_mmr, 
                 REML = TRUE, 
                 na.action = na.exclude)
 summary(lmm2log_p)
@@ -748,12 +815,12 @@ summary(lmm2log_p)
 confint(lmm2log_p, oldNames = FALSE)
 
 lmm3_p_c <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1| county), 
-             data = vaccine_overall)
-summary(lmm2_p_c)
+             data = vaccine_mmr)
+summary(lmm3_p_c)
 
 
 lmm3log_p_c <- lmer(log10_mmr ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county), 
-                    data = vaccine_overall, 
+                    data = vaccine_mmr, 
                     REML = TRUE, 
                     na.action = na.exclude)
 
