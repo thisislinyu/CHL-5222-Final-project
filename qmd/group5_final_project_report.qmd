@@ -1,0 +1,466 @@
+---
+title: "CHL5222 Group 5 Final Project Report"
+subtitle: "R code"
+author: "Jannie Leung, Lin Yu, Barrett Buhler, Nhat Chau, Isha Sharma"
+format:
+  html
+---
+
+```{r, message=FALSE}
+
+## load R packages
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(car)
+library(knitr)
+library(kableExtra)
+library(table1)
+library(readr)
+library(dplyr)
+library(sf)
+library(tigris)
+
+# set report formatting
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font size for all ggplot figures
+
+```
+
+In this project, we consulted with the Stackoverflow and Datanovia websites for data analysis.
+
+
+```{r}
+
+### Data preparation 
+
+## load dataset
+vaccine <- read_csv("data/vaccine.csv")
+
+## clean dataset
+vaccine_dat <- vaccine %>% 
+  
+  # recode vaccination coverage rates with -1 as missing
+  mutate(overall_recode = ifelse(overall == -1, NA, overall),
+         mmr_recode = ifelse(mmr == -1, NA, mmr)) %>%   
+  
+  # recode missing or 2017 school year as 2017-2018 (as per dataset description)
+  mutate(year_recode = case_when(
+    year == "null" ~ "2017-18",
+    year == "2017" ~ "2017-18",
+    TRUE ~ year)) %>%
+  
+  # create state spending per pupil variable (in US$1million)
+  mutate(spend_person = round(statespending2016/schagepop2016/1000, 2)) %>%
+  
+ # clean county name
+  mutate(county = case_when(
+    county == "State Of Illinois" ~ NA_character_,
+    county == "BLAINE" ~ "Blaine",
+    county == "ADA" ~ "Ada",
+    county == "#N/A" ~ NA_character_,
+    county == "Oklahoma/Tulsa" ~ "Oklahoma",
+    county == "Walwroth" ~ "Walworth",
+    county == "adams" ~ "Adams",
+    county == "Colorado BOCS" ~ "Denver",
+    county == "New Hampshire" ~ NA_character_,
+    TRUE ~ county)) %>%
+  
+  # standardize county and state with uppercase
+  mutate(county = toupper(county)) %>%
+  mutate(state = toupper(state)) %>%
+  
+  # Add state political electoral college as covariate
+  mutate(state_political_vote = case_when(
+    state=="ARIZONA" ~ "Swing State",
+    state=="ARKANSAS" ~ "Republican Party",
+    state=="CALIFORNIA" ~ "Democratic Party",  
+    state=="COLORADO" ~ "Democratic Party",     
+    state=="CONNECTICUT" ~ "Democratic Party", 
+    state=="FLORIDA" ~ "Swing State",      
+    state=="IDAHO" ~ "Republican Party",        
+    state=="ILLINOIS" ~ "Democratic Party",
+    state=="IOWA" ~ "Republican Party",         
+    state=="MAINE" ~ "Swing State",  
+    state=="MASSACHUSETTS" ~ "Democratic Party", 
+    state=="MICHIGAN" ~ "Republican Party", 
+    state=="MINNESOTA" ~ "Swing State", 
+    state=="MISSOURI" ~ "Republican Party", 
+    state=="MONTANA" ~ "Republican Party",     
+    state=="NEW JERSEY" ~ "Democratic Party",  
+    state=="NEW YORK" ~ "Democratic Party", 
+    state=="NORTH CAROLINA" ~ "Swing State", 
+    state=="NORTH DAKOTA" ~ "Republican Party", 
+    state=="OHIO" ~ "Republican Party",         
+    state=="OKLAHOMA" ~ "Republican Party",     
+    state=="OREGON" ~ "Democratic Party",       
+    state=="PENNSYLVANIA" ~ "Swing State", 
+    state=="RHODE ISLAND" ~ "Democratic Party", 
+    state=="SOUTH DAKOTA" ~ "Republican Party", 
+    state=="TENNESSEE" ~ "Republican Party",    
+    state=="TEXAS" ~ "Republican Party", 
+    state=="UTAH" ~ "Republican Party", 
+    state=="VERMONT" ~ "Democratic Party",      
+    state=="VIRGINIA" ~ "Democratic Party",     
+    state=="WASHINGTON" ~ "Democratic Party",  
+    state=="WISCONSIN" ~ "Swing State"
+    )) %>%
+  
+    # assign Swing State as reference category
+    mutate(state_political_vote = factor(state_political_vote, levels = c(
+      "Swing State",
+      "Democratic Party",
+      "Republican Party"))) %>%
+    
+  # create unique school id
+  arrange(state, county, city, name) %>%
+  mutate(school_id = row_number())
+
+
+## create dataset for schools with overall vaccination rates
+vaccine_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode))
+
+## create dataset for schools with MMR vaccination rates
+vaccine_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode))
+
+```
+
+### ADD DESCRIPTIVE STATISTICS, FIGURES AND TABLES HERE ###
+
+
+
+$$
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State  electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ 
+$$
+where Y is vaccination rate (Overall and MMR) for *i*th school in *j*th county and *k*th state (continuous),
+State spending is in US dollars per student of the *k*th state (continuous),
+School year of the *i*th school (categorical, with 2017-18 as reference category),
+State electoral college is the political party that the *k*th state predominantly voted for in 2017-2018 (categorical, with Swing State (vote fluctuates between parties) as the reference category),
+${b}_k$ is the random effect of the *k*th state (level 3),
+${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
+
+
+### Fit Multi-level Linear Mixed Effects model: Overall vaccination rates
+
+## Fit base model (marginal mean response)
+
+$$
+E(Y_{ijk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political vote}_k
+$$
+
+```{r, include = FALSE}
+
+## fit linear regression model 
+lr <- lm(overall_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_overall)
+options(scipen=999)
+summary(lr)
+anova(lr)
+
+```
+
+
+## Fit linear mixed effects model with random intercept for county and state (three-level model)
+
+```{r}
+
+## fit 3-level LMM model
+lmm3 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
+                data = vaccine_overall)
+summary(lmm3)
+
+## obtain confidence intervals
+confint(lmm3, oldNames = FALSE)
+
+```
+
+## Fit linear mixed effects model with random intercept for state (two-level model)
+
+$$
+E(Y_{ijk}|b_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political party}_k + {b}_k\ 
+$$
+
+```{r}
+
+## fit 2-level LMM model
+lmm2 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_overall)
+summary(lmm2)
+
+## obtain confidence intervals
+confint(lmm2, oldNames = FALSE)
+
+```
+
+
+## Compare three-level and two-level models using AIC and BIC
+
+```{r}
+
+## extract AIC and BIC from base model
+info_crit_base <- data.frame(
+            "AIC" = AIC(lr),
+            "BIC" = BIC(lr)) %>%
+  mutate(Model = "Base model")
+
+## extract AIC and BIC from two-level model
+info_crit2 <- data.frame(
+            "AIC" = AIC(lmm2),
+            "BIC" = BIC(lmm2)) %>%
+  mutate(Model = "Two-level")
+
+## extract AIC and BIC from three-level model
+info_crit_table <- data.frame(
+  "AIC" = AIC(lmm3),
+  "BIC" = BIC(lmm3)) %>%
+  mutate(Model = "Three-level") %>%
+  # add values from two-level model and base model
+  rbind(info_crit2, info_crit_base)
+info_crit_table
+
+```
+
+## Check model diagnostics
+
+```{r}
+
+## check normality of model residuals
+qqnorm(residuals(lmm3), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3), col="red")
+
+```
+
+```{r}
+## Normal qqplot of the random effects: county-level random effects
+bjkhat <- ranef(lmm3, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+
+## Normal qqplot of the random effects: state-level random effects
+bkhat <- ranef(lmm3, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+
+## Histogram of county random effects residuals
+ranef(lmm3)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+```{r}
+
+## Histogram of state random effects residuals
+ranef(lmm3)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+## Intra-class clustering
+
+```{r}
+
+## extract random effects variances
+re_variance <- as.data.frame(VarCorr(lmm3))
+
+# create vector for county random effect variance
+re_var_county <- re_variance %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state <- re_variance %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid <- re_variance %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in the same county within the same state
+corr_county <- as.data.frame(as.numeric(re_var_county + re_var_state) / (re_var_resid + re_var_state + re_var_county)) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in same county")
+
+## correlation between two schools in different counties but within the same state
+corr_state <- as.data.frame(as.numeric(re_var_state / (re_var_resid + re_var_state + re_var_county))) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in different counties within same state")
+
+corr_table <- rbind(corr_county, corr_state) %>%
+  select(Type, Correlation_coefficient)
+corr_table
+
+```
+
+
+### Fit Linear Mixed Effects model: MMR vaccination rates
+
+## Fit base model (marginal mean response)
+
+```{r, include = FALSE}
+
+## fit linear regression model
+lr_mmr <- lm(mmr_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_mmr)
+summary(lr_mmr)
+anova(lr_mmr)
+
+```
+
+## Fit linear mixed effects model with random intercept for county and state (three-level model)
+
+```{r}
+
+## fit 3-level LMM model
+lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
+                data = vaccine_mmr)
+summary(lmm3mmr)
+
+## obtain confidence intervals
+confint(lmm3mmr, oldNames = FALSE)
+
+```
+
+## Fit linear mixed effects model with random intercept for state (two-level model)
+
+```{r}
+
+## fit 2-level LMM model
+lmm2mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_mmr)
+summary(lmm2mmr)
+
+## obtain confidence intervals
+confint(lmm2mmr, oldNames = FALSE)
+
+```
+
+### Compare three-level and two-level models using AIC and BIC
+
+```{r}
+
+## extract AIC and BIC from base model
+info_crit_mmr_base <- data.frame(
+            "AIC" = AIC(lr_mmr),
+            "BIC" = BIC(lr_mmr)) %>%
+  mutate(Model = "Base model")
+
+## extract AIC and BIC from two-level model
+info_crit_mmr2 <- data.frame(
+            "AIC" = AIC(lmm2mmr),
+            "BIC" = BIC(lmm2mmr)) %>%
+  mutate(Model = "Two-level")
+
+## extract AIC and BIC from three-level model
+info_crit_table_mmr <- data.frame(
+  "AIC" = AIC(lmm3mmr),
+  "BIC" = BIC(lmm3mmr)) %>%
+  mutate(Model = "Three-level") %>%
+  # add values from two-level model and base model
+  rbind(info_crit_mmr2, info_crit_mmr_base)
+info_crit_table_mmr
+
+```
+
+## Check model diagnostics
+```{r}
+## check normality of residuals
+qqnorm(residuals(lmm3mmr), ylab="Sample Quantiles for residuals")
+qqline(residuals(lmm3mmr), col="red")
+
+```
+
+```{r}
+## Normal qqplot of the random effects: county-level random effects
+bjkhat <- ranef(lmm3mmr, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+```
+
+
+```{r}
+
+## Normal qqplot of the random effects: state-level random effects
+bkhat <- ranef(lmm3mmr, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+
+## Histogram of county random effects residuals
+ranef(lmm3mmr)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+```{r}
+
+## Histogram of state random effects residuals
+ranef(lmm3mmr)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+## Intra-class clustering
+
+```{r}
+
+## extract random effects variances
+re_variance_mmr <- as.data.frame(VarCorr(lmm3mmr))
+
+# create vector for county random effect variance
+re_var_county_mmr <- re_variance_mmr %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state_mmr <- re_variance_mmr %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid_mmr <- re_variance_mmr %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in the same county within the same state
+corr_county_mmr <- as.data.frame(as.numeric(re_var_county_mmr + re_var_state_mmr) / (re_var_resid_mmr + re_var_state_mmr + re_var_county_mmr)) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in same county")
+
+## correlation between two schools in different counties but within the same state
+corr_state_mmr <- as.data.frame(as.numeric(re_var_state_mmr / (re_var_resid_mmr + re_var_state_mmr + re_var_county_mmr))) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in different counties within same state")
+
+corr_table_mmr <- rbind(corr_county_mmr, corr_state_mmr) %>%
+  select(Type, Correlation_coefficient)
+corr_table_mmr
+
+```
