@@ -207,7 +207,9 @@ ggplot(data = geo_dat) +
   ) +
   xlab("")+
   ylab("")+
-  geom_sf_text(aes(label = NAME), size = 1.5, color = "black")  # STUSPS
+  geom_sf_text(aes(label = NAME), size = 1.5, color = "black")+
+  theme_bw()
+  # STUSPS
 
 
 ```

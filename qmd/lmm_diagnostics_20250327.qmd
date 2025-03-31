@@ -36,6 +36,8 @@ theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font si
 ## load dataset
 vaccine <- read_csv("data/vaccine.csv")
 
+vaccine <- read_csv(here("data","vaccine.csv"))
+
 ## clean dtaset
 vaccine_dat <- vaccine %>% 
   
@@ -221,6 +223,8 @@ confint(lmm3, oldNames = FALSE)
 
 
 ##** results are identical --> can exclude this model **
+##*
+##* GLMM can deal with missing data, and assume data is MAR?
 
 ```
 
@@ -312,7 +316,6 @@ School year of the *i*th school (categorical, with 2017-18 as reference category
 State electoral college of the *k*th state is a categorical variable (Democrat, Republican, swing state),
 ${b}_k$ is the random effect of the *k*th state (level 3),
 ${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
-
 
 
 ## Compare three-level and two-level models using AIC and BIC
@@ -737,5 +740,253 @@ corr_county_state_mmr
 
 ## correlation between two schools in different counties = 0
 
+
+```
+
+```{r}
+avg_overall_dat <- full_join(
+  vaccine_overall %>% 
+  group_by(state) %>% 
+  summarise(avg_overall = mean(overall)),
+
+vaccine_overall %>% 
+  select(state,spend_person,statespending2016) %>% unique(),
+by= c("state")
+)
+
+avg_overall_dat %>% datatable()
+
+avg_mmr_dat <- full_join(
+  vaccine_mmr %>% 
+  group_by(state) %>% 
+  summarise(avg_mmr = mean(mmr)),
+
+vaccine_mmr %>% 
+  select(state,spend_person,statespending2016) %>% unique(),
+by= c("state")
+)
+avg_mmr_dat %>% datatable()
+
+avg_overall_dat$type = "Overall"
+
+colnames(avg_overall_dat) <- c("state", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_mmr_dat$type ="MMR"
+
+colnames(avg_mmr_dat) <- c("state", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_vaccine_dat <- rbind(avg_overall_dat,avg_mmr_dat)
+
+avg_vaccine_dat$type <- factor(avg_vaccine_dat$type,
+                               levels = c("Overall","MMR"),
+                               labels =c("Overall","MMR") )
+
+```
+
+### scatter plots by state
+```{r}
+
+avg_overall_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=0.7) +  # One overall trend line
+  geom_point(aes(color = state)) +  # Keep individual state colors for points
+  theme_bw()
+
+
+
+avg_mmr_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=0.7) +  # One overall trend line
+  geom_point(aes(color = state)) +  # Keep individual state colors for points
+  theme_bw()
+
+
+scatter_plot <- avg_vaccine_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(aes(color = state),size=5) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each State")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+    legend.text = element_text(size = 18),   # Legend text size
+    legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+
+scatter_plot0 <- avg_vaccine_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(size=5,shape=1) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each State")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+    legend.text = element_text(size = 18),   # Legend text size
+    legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+scatter_plot0_mmr <- avg_vaccine_dat %>% filter(type=="MMR") %>% 
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(size=5,shape=1) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each State")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+    legend.text = element_text(size = 18),   # Legend text size
+    legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+
+ggsave(scatter_plot0,file=here("figures","scatter_plot0.png")
+         ,dpi=300,width = 16,height = 7)
+
+
+ggsave(scatter_plot0,file=here("figures","scatter_plot0.png")
+         ,dpi=300,width = 16,height = 7)
+
+ggsave(scatter_plot,file=here("figures","scatter_plot.png")
+         ,dpi=300,width = 16,height = 7)
+
+
+
+scatter_plot1 <- avg_vaccine_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  # geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=0.7) +  # One overall trend line
+  geom_point(aes(color = state),size=5) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate")
+
+
+ggsave(scatter_plot1,file=here("figures","scatter_plot1.png")
+         ,dpi=300,width = 16,height = 7)
+```
+
+### scatter plots by state and county
+```{r}
+avg_overall_dat_county <- full_join(
+  vaccine_overall %>% 
+  group_by(state,county) %>% 
+  summarise(avg_overall = mean(overall)),
+
+vaccine_overall %>% 
+  select(state,county,spend_person,statespending2016) %>% unique(),
+by= c("state","county")
+)
+
+avg_overall_dat_county %>% datatable()
+
+avg_mmr_dat_county <- full_join(
+  vaccine_mmr %>% 
+  group_by(state,county) %>% 
+  summarise(avg_mmr = mean(mmr)),
+
+vaccine_mmr %>% 
+  select(state,county,spend_person,statespending2016) %>% unique(),
+by= c("state","county")
+)
+avg_mmr_dat_county %>% datatable()
+
+avg_overall_dat_county$type = "Overall"
+
+colnames(avg_overall_dat_county) <- c("state", "county","avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_mmr_dat_county$type ="MMR"
+
+colnames(avg_mmr_dat_county) <- c("state","county", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_vaccine_dat_county <- rbind(avg_overall_dat_county,avg_mmr_dat_county)
+
+avg_vaccine_dat_county$type <- factor(avg_vaccine_dat_county$type,
+                               levels = c("Overall","MMR"),
+                               labels =c("Overall","MMR") )
+
+```
+
+```{r}
+scatter_plot3 <- avg_overall_dat_county %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(aes(color = state),size=3) +  
+ # facet_wrap(~state, ncol = 4)+
+  theme_bw()+
+  ggplot(data = avg_overall_dat,aes(x = spend_person, y = avg_vaccine))+
+ # theme(legend.position = "none")+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each County")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+   # legend.text = element_text(size = 18),   # Legend text size
+   # legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+
+
+ggsave(scatter_plot3,file=here("figures","scatter_plot3.png")
+         ,dpi=300,width = 16,height = 7)
+
+
+
+scatter_plot1 <- avg_vaccine_dat %>%
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  # geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=0.7) +  # One overall trend line
+  geom_point(aes(color = state),size=5) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate")
+
+
+ggsave(scatter_plot1,file=here("figures","scatter_plot1.png")
+         ,dpi=300,width = 16,height = 7)
+```
+### scatter plot all in one
+```{r}
+scatter_plot3 <- avg_vaccine_dat_county %>% 
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  # geom_smooth(method = "lm", se = FALSE, color = "gray", linetype = "dashed", size = 2) +  # Overall trend line
+  geom_point(aes(color = state), size = 5) +  # Points from avg_overall_dat_county
+  geom_point(data = avg_vaccine_dat, aes(x = spend_person, y = avg_vaccine), color = "black", size = 5, shape = 1) + 
+ facet_wrap(~type) + 
+   #geom_line(data = avg_overall_dat, aes(x = spend_person, y = avg_vaccine), color = "black", size = 0.5, shape = 1)
+  theme_bw() +
+  xlab("Public Spending per Student per School Year (in US Dollars)") +
+  ylab("Averaged Vaccination Rate in Each County") +
+  theme(
+    text = element_text(size = 18),
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20, face = "bold"),
+    legend.text = element_text(size = 14,face = "bold"),
+    legend.title = element_text(size = 16,face = "bold"),
+    strip.text = element_text(size = 18, face = "bold")
+  )
+
+ggsave(scatter_plot3, file = here("figures", "scatter_plot3.png"),
+       dpi = 300, width = 18, height = 8)
 
 ```

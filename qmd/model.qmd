@@ -36,7 +36,7 @@ before modelling, I looked at the outcome distribution
 ```{r}
 vaccine_overall$overall %>% density() %>% plot()
 
-vaccine_overall$mmr %>% density() %>% plot()
+vaccine_mmr$mmr %>% density() %>% plot()
 
 ```
 
@@ -46,17 +46,12 @@ apply logit transformation, I have a less skewed distribution
 p_overall <- (vaccine_overall$overall)*0.01
 p_mmr <- (vaccine_overall$mmr)*0.01
 
+
+
 p_overall %>% density() %>% plot()
 
-log(  p_overall/ (1-p_overall) ) %>% 
-  density() %>% plot()
 
-tmp <- vaccine_mmr %>% 
-  mutate(p_mmr = mmr*0.01,
-         logit = log(p_mmr/(1-p_mmr)))
 
-# log(  p_mmr/ (1-p_mmr) ) %>% 
-#   density() %>% plot()
 ```
 
 the averaged vaccination rate vs spending
@@ -67,7 +62,7 @@ avg_overall_dat <- full_join(
   summarise(avg_overall = mean(overall)),
 
 vaccine_overall %>% 
-  select(state,spend_person) %>% unique(),
+  select(state,spend_person,statespending2016) %>% unique(),
 by= c("state")
 )
 
@@ -79,7 +74,7 @@ avg_mmr_dat <- full_join(
   summarise(avg_mmr = mean(mmr)),
 
 vaccine_mmr %>% 
-  select(state,spend_person) %>% unique(),
+  select(state,spend_person,statespending2016) %>% unique(),
 by= c("state")
 )
 avg_mmr_dat %>% datatable()
@@ -91,12 +86,21 @@ avg_overall_dat %>%
   geom_point()+
   theme_bw()
 
+avg_overall_dat %>% 
+  ggplot(aes(x = statespending2016,y = avg_overall,color = state))+
+  geom_point()+
+  theme_bw()
+
 
 avg_mmr_dat %>% 
   ggplot(aes(x = spend_person,y = avg_mmr,color = state))+
   geom_point()+
   theme_bw()
 
+avg_mmr_dat %>% 
+  ggplot(aes(x = statespending2016,y = avg_mmr,color = state))+
+  geom_point()+
+  theme_bw()
 ```
     
 From the scatter plots, we can see that:      
@@ -109,7 +113,7 @@ From the scatter plots, we can see that:
 the model is specified as:
 
 $$
-\text{g}E(Y_{ik}|b^{(3)}_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + {b}^{(3)}_k\  +\epsilon_{jk}
+E(Y_{ik}|b^_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + + \beta_3 \cdot \text{school age population} + {b}^_k\  
 $$
 
 I normalized the continuous variable
@@ -150,7 +154,7 @@ ranef(model1)
 ### model 2: GLMM with county-level data
 
 $$
-\text{log}E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{State electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ +\epsilon_{jk}
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{State electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ +\epsilon_{jk}
 $$
 #### model 2a: with all states
 
