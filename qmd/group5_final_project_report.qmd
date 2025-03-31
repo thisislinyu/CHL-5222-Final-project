@@ -23,6 +23,7 @@ library(readr)
 library(dplyr)
 library(sf)
 library(tigris)
+library(ggpubr)
 
 # set report formatting
 knitr::opts_knit$set(root.dir = here())
@@ -181,6 +182,8 @@ avg_vaccine_dat$type <- factor(avg_vaccine_dat$type,
 
 averaged vaccination rate by state and outcome
 ```{r}
+#| fig-width: 16
+#| fig-height: 8
 scatter_plot0_overall <- avg_vaccine_dat %>% filter(type=="Overall") %>% 
   ggplot(aes(x = spend_person, y = avg_vaccine)) +
   geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
@@ -266,6 +269,8 @@ avg_vaccine_dat_county$type <- factor(avg_vaccine_dat_county$type,
 ```
 
 ```{r}
+#| fig-width: 16
+#| fig-height: 8
 scatter_plot3 <- avg_vaccine_dat_county %>% 
   ggplot(aes(x = spend_person, y = avg_vaccine)) +
    geom_smooth(method = "lm", se = FALSE, color = "gray", linetype = "dashed", size = 2) +  # Overall trend line
@@ -287,6 +292,124 @@ scatter_plot3 <- avg_vaccine_dat_county %>%
 
 scatter_plot3
 ```
+
+
+### Maps
+
+#### Overall vaccination map
+```{r}
+#| output: false
+# Load US states map data
+us_states <- st_as_sf(states())
+
+```
+
+
+```{r}
+overall_map <- avg_overall_dat %>% 
+  mutate(state = tolower(state))
+
+us_states <- us_states %>%
+  mutate(NAME = tolower(NAME))
+
+geo_dat <- left_join(us_states, overall_map, by = c("NAME" = "state")) %>% 
+  unique()
+geo_dat <- st_as_sf(geo_dat)
+
+
+
+library(ggplot2)
+library(dplyr)
+
+# Create a map with text labels for each state
+overall_map_plt <- ggplot(data = geo_dat) +
+  geom_sf(aes(fill = avg_vaccine)) +  # Color the states by spending
+  # scale_fill_viridis_c() +  # Use the 'viridis' color scale
+   scale_fill_gradientn(colors = c("#f4e1d2","#f18973", "#bc5a45", "#9e3d2e"),
+                        na.value = "#D3D3D3"  ) + 
+
+  theme_minimal() +  # Use a minimal theme
+  labs(
+   # title = "Public Education Spending in Each State",
+    fill = ""
+  ) + 
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) + 
+  coord_sf(
+    xlim = c(-125, -66),  # Longitude limits (approximate for the U.S.)
+    ylim = c(24, 50)      # Latitude limits (approximate for the U.S.)
+  ) +
+  xlab("")+
+  ylab("")+
+ # geom_sf_text(aes(label = NAME), size = 1.5, color = "black")+
+ theme(
+  axis.title = element_blank(),
+  axis.text = element_blank(),
+  axis.ticks = element_blank(),
+  panel.grid = element_blank()
+)
+```
+#### MMR vaccination map
+```{r}
+mmr_map <- avg_mmr_dat %>%  mutate(state = tolower(state))
+
+us_states <- us_states %>%
+  mutate(NAME = tolower(NAME))
+
+geo_dat <- left_join(us_states, mmr_map, by = c("NAME" = "state"))
+geo_dat <- st_as_sf(geo_dat)
+
+
+
+library(ggplot2)
+library(dplyr)
+
+# Create a map with text labels for each state
+mmr_map_plt <- ggplot(data = geo_dat) +
+  geom_sf(aes(fill = avg_vaccine)) +  # Color the states by spending
+  # scale_fill_viridis_c() +  # Use the 'viridis' color scale
+   # scale_fill_gradient(low = "#feb236", high = "#ff7b25")+
+ scale_fill_gradientn(colors = c("#f4e1d2","#f18973", "#bc5a45", "#9e3d2e"),
+                        na.value = "#D3D3D3"  ) +  
+  theme_minimal() +  # Use a minimal theme
+  labs(
+   # title = "Public Education Spending in Each State",
+    fill = ""
+  ) + 
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) + 
+  coord_sf(
+    xlim = c(-125, -66),  # Longitude limits (approximate for the U.S.)
+    ylim = c(24, 50)      # Latitude limits (approximate for the U.S.)
+  ) +
+  xlab("")+
+  ylab("")+
+ # geom_sf_text(aes(label = NAME), size = 1.5, color = "black")+
+ theme(
+  axis.title = element_blank(),
+  axis.text = element_blank(),
+  axis.ticks = element_blank(),
+  panel.grid = element_blank()
+)
+  # STUSPS
+
+# map_plts <- ggarrange(overall_map_plt,mmr_map_plt)
+# 
+# ggsave(map_plts,file=here("figures","map_plts.png"),dpi=300)
+
+ggsave(overall_map_plt,file=here("figures","overall_map_plt.png"),dpi=300)
+
+ggsave(mmr_map_plt,file=here("figures","mmr_map_plt.png"),dpi=300)
+
+overall_map_plt
+mmr_map_plt
+
+```
+
 
 
 $$
