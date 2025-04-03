@@ -501,8 +501,60 @@ info_crit_table
 
 ```
 
-## Check model diagnostics
+### Check model diagnostics
+## Diagnostics for stage-one residuals
 
+```{r}
+
+## unable to extract normalized residuals directly:
+## https://stackoverflow.com/questions/73459709/how-does-one-compute-the-normalized-model-residuals-based-via-lme4-mermod-in-r
+## https://www.rdocumentation.org/packages/lme4/versions/1.1-36/topics/residuals.merMod
+
+## obtain standardized stage-one residuals (school-level) manually
+condmean <- predict(lmm3) # obtain conditional means
+y <- vaccine_overall$overall_recode
+stg1r <- y - condmean
+estsigma2 <- sigma(lmm3)^2
+estsigmamat <- estsigma2 * diag(dim(vaccine_overall)[1])
+# Cholesky decomposition - this step takes a long time
+L <- chol(estsigmamat) 
+stg1rstar <- solve(L) %*% stg1r
+head(stg1rstar)
+
+## compare raw stage-one residuals and standardized residuals
+rtype <- c(rep("Raw", length(stg1r)), rep("Standardized", length(stg1r)))
+resid <- c(stg1r, stg1rstar)
+stg1resids <- as.data.frame(cbind(rtype, as.numeric(resid)))
+
+# create plot
+ggplot(stg1resids, aes(x = resid, fill = rtype)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  labs(y = "Count", x = "Residuals", fill = "Type")
+
+```
+
+## Normal QQ Plot of standardized residuals
+```{r}
+qqnorm(stg1rstar, pch = 1)
+qqline(stg1rstar, col = "steelblue", lwd = 2)
+
+qqnorm(residuals(mod1 , type = "n")) # standardized residual
+qqline(residuals(mod1 , type = "n"))
+
+## check normality of model residuals
+#qqnorm(residuals(lmm3), ylab="Sample Quantiles for residuals")
+#qqline(residuals(lmm3), col="red")
+
+```
+
+## Plot standardized residuals against predicted mean
+```{r}
+yhat <- predict(lmm3)
+plot(y = stg1rstar, x = yhat)
+
+```
+
+## Diagnostics for random effects
 ```{r}
 
 ## check normality of model residuals
