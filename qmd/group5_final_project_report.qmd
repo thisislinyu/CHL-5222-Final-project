@@ -943,5 +943,88 @@ corr_state_mmr <- as.data.frame(as.numeric(re_var_state_mmr / (re_var_resid_mmr 
 corr_table_mmr <- rbind(corr_county_mmr, corr_state_mmr) %>%
   select(Type, Correlation_coefficient)
 corr_table_mmr
+```
 
+### Supplementary Table 1
+
+```{r}
+generate_table <- function(data, filter_conditions) {
+  data %>%
+    filter(!!!filter_conditions) %>%
+    group_by(state) %>%
+    
+    summarise(
+      county_number = n_distinct(county, na.rm = TRUE),
+      school_number = length(name),
+      
+      spending = unique(statespending2016),
+      spend_person = unique(spend_person),
+      
+      school_year_2017_18 = length(year_recode[year_recode == "2017-18"]),
+      school_year_2018_19 = length(year_recode[year_recode == "2018-19"]),
+      
+      mean_overall = round(mean(overall_recode, na.rm = TRUE), 2),
+      sd_overall = round(sd(overall_recode, na.rm = TRUE), 2),
+      median_overall = round(median(overall_recode, na.rm = TRUE), 2),
+      iqr_overall = round(IQR(overall_recode, na.rm = TRUE), 2),
+      
+      mean_mmr = round(mean(mmr_recode, na.rm = TRUE), 2),
+      sd_mmr = round(sd(mmr_recode, na.rm = TRUE), 2),
+      median_mmr = round(median(mmr_recode, na.rm = TRUE), 2),
+      iqr_mmr = round(IQR(mmr_recode, na.rm = TRUE), 2)
+      
+    ) %>%
+    mutate(across(everything(), ~ replace(., is.na(.), " "))) %>%
+
+    mutate(
+      mean_sd_overall = paste0(mean_overall, " (", sd_overall, ")"),
+      median_iqr_overall = paste0(median_overall, " (", iqr_overall, ")"),
+      mean_sd_mmr = paste0(mean_mmr, " (", sd_mmr, ")"),
+      median_iqr_mmr = paste0(median_mmr, " (", iqr_mmr, ")"))
+  }
+
+filter_mmr <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                   quote(mmr_recode != " "))
+
+filter_overall <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                       quote(overall_recode != " "))
+
+filter_both <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                    quote(mmr_recode != " "), 
+                    quote(overall_recode != " "))
+
+table_mmr <- generate_table(vaccine_dat, filter_mmr)
+table_overall <- generate_table(vaccine_dat, filter_overall)
+
+table_combine <- bind_rows(table_mmr, table_overall)
+
+table_combine %>% 
+  select(state, county_number, school_number, 
+         school_year_2017_18, school_year_2018_19,
+         spending, spend_person, 
+         mean_sd_overall, median_iqr_overall, 
+         mean_sd_mmr, median_iqr_mmr) %>% 
+  
+  mutate(across(everything(), ~ replace(., . == "  ( )" |
+                                           . == "  ( - )" , " "))) %>% 
+  
+  kable(col.names = c("Outcome variable",
+                      "Number of county report",
+                      "Number of school report",
+                      "2017 - 2018",
+                      "2018 - 2019",
+                      "Per <br> state", "Per <br> person", 
+                      "Mean (SD)", "Median (IQR)",
+                      "Mean (SD)", "Median (IQR)"),
+        format = "html", escape = FALSE) %>% 
+  
+  group_rows("MMR (N = 21)", 1, nrow(table_mmr)) %>% 
+  group_rows("Overall (N = 17)", 
+             nrow(table_mmr) + 1, 
+             nrow(table_mmr) + 
+             nrow(table_overall)) %>% 
+  
+add_header_above(c(" " = 1, " " = 2, "School year" = 2,
+                     "State spending (in $1,000)" = 2,
+                     "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
 ```
