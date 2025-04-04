@@ -134,6 +134,466 @@ vaccine_mmr <- vaccine_dat %>%
 
 ### ADD DESCRIPTIVE STATISTICS, FIGURES AND TABLES HERE ###
 
+### Descriptive statistics
+```{r}
+total_data <- vaccine_dat %>%
+  filter(mmr_recode != -1 | overall_recode != -1) %>%  
+  summarise(
+    private_total = sum(type_recode == "Private", na.rm = TRUE),
+    public_total = sum(type_recode == "Public", na.rm = TRUE),
+    na_total = sum(is.na(type_recode) | type_recode == " ", na.rm = TRUE))
+```
+
+```{r}
+##** table 1 stratified by vaccination group **
+
+table_combine %>% 
+  select(state, county_number, school_number, private, 
+         public, na, spending, spend_person, 
+         mean_sd_overall, median_iqr_overall, 
+         mean_sd_mmr, median_iqr_mmr) %>% 
+  
+  mutate(across(everything(), ~ replace(., . == "  ( )" |
+                                           . == "  ( - )" , " "))) %>% 
+  
+  kable(col.names = c("Group / State",
+                      "Number of county report",
+                      "Number of school report",
+                      "Private <br> (N = 3367)", 
+                      "Public <br> (N = 13078)", 
+                      "Unknown <br> (N = 25861)", 
+                      "Per <br> state", "Per <br> person", 
+                      "Mean (SD)", "Median (IQR)",
+                      "Mean (SD)", "Median (IQR)"),
+        format = "html", escape = FALSE) %>% 
+  
+  group_rows("MMR (N = 15)", 1, nrow(table_mmr)) %>% 
+  group_rows("Overall (N = 11)", 
+             nrow(table_mmr) + 1, 
+             nrow(table_mmr) + 
+             nrow(table_overall)) %>% 
+  group_rows("MMR + Overall (N = 6)", 
+             nrow(table_mmr) + 
+             nrow(table_overall) + 1, 
+             nrow(table_combine)) %>% 
+  
+add_header_above(c(" " = 1, " " = 2, "School type" = 3, 
+                     "State spending (in $1,000)" = 2,
+                     "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
+```
+
+```{r}
+
+##** summarize data completion for the different models **
+##*
+#summary(vaccine_dat$mmr_recode)
+#summary(vaccine_dat$overall_recode)
+
+## check for duplicate school names
+#dups <- vaccine_dat %>%
+#  group_by(state, county, city, name) %>%
+#  mutate(count = n()) %>%
+#  ungroup()
+
+#table(dups$count, useNA="ifany")
+
+
+### create summary table for MMR 
+
+## summarise number of schools reporting
+num_school_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n_distinct(name)) %>%
+  ungroup() %>%
+  # summary statistics
+  summarise(number_states = n(),
+            total_schools = sum(number_schools),
+            median_schools = median(number_schools),
+            min_schools = min(number_schools),
+            max_schools = max(number_schools))
+
+## summarise number of schools reporting MMR and overall vaccination rates
+enroll_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  mutate(has_enrollment = if_else(!is.na(enroll),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_enrollment = sum(has_enrollment),
+            perc_reported_enrollment = round(reported_enrollment/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_enrollment = na_if(perc_reported_enrollment, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_with_enrollment = length(which(reported_enrollment!=0)),
+            perc_states_w_enrollment = round(states_with_enrollment/number_states*100,1),
+            min_perc_enrollment = min(perc_reported_enrollment, na.rm = T),
+            max_perc_enrollment = max(perc_reported_enrollment, na.rm = T)
+            ) %>%
+  select(-number_states)
+           
+## summarise school type 
+type_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  mutate(has_type = if_else(!is.na(type),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_type = sum(has_type),
+            perc_reported_type = round(reported_type/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_type = na_if(perc_reported_type, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_schooltype = length(which(reported_type!=0)),
+            perc_states_w_schooltype = round(states_w_schooltype/number_states*100,1)) %>%
+  select(-number_states)
+
+# has county
+county_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  mutate(has_county = if_else(!is.na(county),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            with_county = sum(has_county),
+            perc_reported_county = round(with_county/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_county = na_if(perc_reported_county, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_county = length(which(with_county!=0)),
+            min_perc_county = min(perc_reported_county, na.rm = T),
+            max_perc_county = max(perc_reported_county, na.rm = T)
+  ) %>%
+  select(-number_states)
+      
+## combine columns
+mmr_data_tab <- cbind(num_school_mmr, enroll_mmr, type_mmr, county_mmr) %>%
+  mutate(Group = "MMR")
+  
+
+### create summary table for overall vaccination
+
+## summarise number of schools reporting
+num_school_all <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n_distinct(name)) %>%
+  ungroup() %>%
+  # summary statistics
+  summarise(number_states = n(),
+            total_schools = sum(number_schools),
+            median_schools = median(number_schools),
+            min_schools = min(number_schools),
+            max_schools = max(number_schools))
+
+## summarise number of schools reporting MMR and overall vaccination rates
+enroll_all <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  mutate(has_enrollment = if_else(!is.na(enroll),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_enrollment = sum(has_enrollment),
+            perc_reported_enrollment = round(reported_enrollment/number_schools*100,1)) %>%
+  ungroup() %>%
+  # recode reported_enrollment=0 as missing
+  mutate(perc_reported_enrollment = na_if(perc_reported_enrollment, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_with_enrollment = length(which(reported_enrollment!=0)),
+            perc_states_w_enrollment = round(states_with_enrollment/number_states*100,1),
+            min_perc_enrollment = min(perc_reported_enrollment, na.rm = T),
+            max_perc_enrollment = max(perc_reported_enrollment, na.rm = T)
+  ) %>%
+  select(-number_states)
+
+       
+## summarise school type 
+type_all <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  mutate(has_type = if_else(!is.na(type),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_type = sum(has_type),
+            perc_reported_type = round(reported_type/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_type = na_if(perc_reported_type, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_schooltype = length(which(reported_type!=0)),
+            perc_states_w_schooltype = round(states_w_schooltype/number_states*100,1)) %>%
+  select(-number_states)
+      
+# has county
+county_all <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  mutate(has_county = if_else(!is.na(county),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            with_county = sum(has_county),
+            perc_reported_county = round(with_county/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_county = na_if(perc_reported_county, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_county = length(which(with_county!=0)),
+            min_perc_county = min(perc_reported_county, na.rm = T),
+            max_perc_county = max(perc_reported_county, na.rm = T)
+            ) %>%
+  select(-number_states)
+
+# combine columns
+overall_data_tab <- cbind(num_school_all, enroll_all, type_all, county_all) %>%
+  mutate(Group = "Overall")
+  
+            
+
+### create summary table for both MMR & overall
+
+## summarise number of schools reporting
+num_school_both <- vaccine_dat %>%
+  filter(!is.na(overall_recode) & !is.na(mmr_recode)) %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n_distinct(name)) %>%
+  ungroup() %>%
+  # summary statistics
+  summarise(number_states = n(),
+            total_schools = sum(number_schools),
+            median_schools = median(number_schools),
+            min_schools = min(number_schools),
+            max_schools = max(number_schools))
+
+## summarise number of schools reporting MMR and overall vaccination rates
+enroll_both <- vaccine_dat %>%
+  filter(!is.na(overall_recode) & !is.na(mmr_recode)) %>%
+  mutate(has_enrollment = if_else(!is.na(enroll),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_enrollment = sum(has_enrollment),
+            perc_reported_enrollment = round(reported_enrollment/number_schools*100,1)) %>%
+  ungroup() %>%
+  # recode reported_enrollment=0 as missing
+  mutate(perc_reported_enrollment = na_if(perc_reported_enrollment, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_with_enrollment = length(which(reported_enrollment!=0)),
+            perc_states_w_enrollment = round(states_with_enrollment/number_states*100,1),
+            min_perc_enrollment = min(perc_reported_enrollment, na.rm = T),
+            max_perc_enrollment = max(perc_reported_enrollment, na.rm = T)
+  ) %>%
+  select(-number_states)
+
+       
+## summarise school type 
+type_both <- vaccine_dat %>%
+  filter(!is.na(overall_recode) & !is.na(mmr_recode)) %>%
+  mutate(has_type = if_else(!is.na(type),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            reported_type = sum(has_type),
+            perc_reported_type = round(reported_type/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_type = na_if(perc_reported_type, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_schooltype = length(which(reported_type!=0)),
+            perc_states_w_schooltype = round(states_w_schooltype/number_states*100,1)) %>%
+  select(-number_states)
+      
+county_both <- vaccine_dat %>%
+  filter(!is.na(overall_recode) & !is.na(mmr_recode)) %>%
+  mutate(has_county = if_else(!is.na(county),1,0)) %>%
+  distinct() %>%
+  # create count of schools by state
+  group_by(state) %>%
+  summarise(number_schools = n(),
+            with_county = sum(has_county),
+            perc_reported_county = round(with_county/number_schools*100,1)) %>%
+  ungroup() %>%
+ # recode reported_enrollment=0 as missing
+  mutate(perc_reported_county = na_if(perc_reported_county, 0)) %>%
+  # count of states with enrollment counts
+  summarise(number_states = n_distinct(state),
+            states_w_county = length(which(with_county!=0)),
+            min_perc_county = min(perc_reported_county, na.rm = T),
+            max_perc_county = max(perc_reported_county, na.rm = T)
+            ) %>%
+  select(-number_states)
+
+## combine columns
+both_data_tab <- cbind(num_school_both, enroll_both, type_both, county_both) %>%
+  mutate(Group = "MMR & Overall")
+  
+
+## create final table
+data_completion_tab <- rbind(overall_data_tab, mmr_data_tab, both_data_tab) %>%
+    relocate(Group, .before = number_states) 
+
+data_completion_tab %>%
+  # make it pretty
+    kable(col.names = c("Group",
+                        "Number of states", 
+                      "Total schools", 
+                      "Median schools per state", 
+                      "Min schools per state",
+                      "Max schools per state", 
+                      "# states with enrollment data",
+                      "% states with enrollment data",
+                      "Min % schools in state reporting enrollment",
+                      "Max % schools in state reporting enrollment", 
+                      "# states reporting school type",
+                      "% states reporting school type",
+                      "# states with county",
+                      "Min % schools in state with county",
+                      "Max % schools in state with county" 
+                      ),
+        format = "html", escape = FALSE) 
+
+
+```
+```{r}
+##** table 1 summary **
+
+state_count_mmr <- vaccine_dat %>% filter(!is.na(mmr_recode)) %>% summarise(n_states = n_distinct(state))
+state_count_overall <- vaccine_dat %>% filter(!is.na(overall_recode)) %>% summarise(n_states = n_distinct(state))
+
+county_stats_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  group_by(state) %>%
+  summarise(n_counties = n_distinct(county)) %>%
+  summarise(
+    total = sum(n_counties),
+    median = median(n_counties),
+    min = min(n_counties),
+    max = max(n_counties)
+  )
+
+county_stats_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  group_by(state) %>%
+  summarise(n_counties = n_distinct(county)) %>%
+  summarise(
+    total = sum(n_counties),
+    median = median(n_counties),
+    min = min(n_counties),
+    max = max(n_counties)
+  )
+
+school_stats_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  group_by(state) %>%
+  summarise(n_schools = n_distinct(name)) %>%
+  summarise(
+    total = sum(n_schools),
+    median = median(n_schools),
+    min = min(n_schools),
+    max = max(n_schools)
+  )
+
+school_stats_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  group_by(state) %>%
+  summarise(n_schools = n_distinct(name)) %>%
+  summarise(
+    total = sum(n_schools),
+    median = median(n_schools),
+    min = min(n_schools),
+    max = max(n_schools)
+  )
+
+
+spending_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  group_by(state) %>%
+  summarise(spend = unique(spend_person)) %>%
+  summarise(mean_spend_million = round(mean(spend, na.rm = TRUE) / 1000, 2))
+
+spending_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  group_by(state) %>%
+  summarise(spend = unique(spend_person)) %>%
+  summarise(mean_spend_million = round(mean(spend, na.rm = TRUE) / 1000, 2))
+
+
+table(vaccine_dat$year_recode[!is.na(vaccine_dat$mmr_recode)])      # For MMR
+table(vaccine_dat$year_recode[!is.na(vaccine_dat$overall_recode)])  # For Overall
+
+mean_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  summarise(mean_mmr = round(mean(mmr_recode, na.rm = TRUE), 1))
+
+mean_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  summarise(mean_overall = round(mean(overall_recode, na.rm = TRUE), 1))
+
+library(tibble)
+library(knitr)
+library(kableExtra)
+
+summary_table <- tibble(
+  `Outcome Variable` = c("MMR", "Overall"),
+  `State (Count)` = c(
+    n_distinct(vaccine_dat$state[!is.na(vaccine_dat$mmr_recode)]),
+    n_distinct(vaccine_dat$state[!is.na(vaccine_dat$overall_recode)])
+  ),
+  `County Count (Sum, Median, Min, Max)` = c(
+  paste(county_stats_mmr$total, county_stats_mmr$median, county_stats_mmr$min, county_stats_mmr$max, sep = ", "),
+  paste(county_stats_overall$total, county_stats_overall$median, county_stats_overall$min, county_stats_overall$max, sep = ", ")
+),
+
+`School Count (Sum, Median, Min, Max)` = c(
+  paste(school_stats_mmr$total, school_stats_mmr$median, school_stats_mmr$min, school_stats_mmr$max, sep = ", "),
+  paste(school_stats_overall$total, school_stats_overall$median, school_stats_overall$min, school_stats_overall$max, sep = ", ")
+),
+  `Spending per Person (Million USD)` = c(
+    spending_mmr$mean_spend_million,
+    spending_overall$mean_spend_million
+  ),
+  `Schools in 2017–18` = c(
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$mmr_recode)])["2017-18"],
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$overall_recode)])["2017-18"]
+  ),
+  `Schools in 2018–19` = c(
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$mmr_recode)])["2018-19"],
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$overall_recode)])["2018-19"]
+  ),
+  `Mean Vaccination Rate (%)` = c(
+    mean_mmr$mean_mmr,
+    mean_overall$mean_overall
+  )
+)
+
+summary_table %>%
+  kable(format = "html", escape = FALSE) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
 ### Scatter plots
 
 We explored the distribution of the averaged vaccination rates.
