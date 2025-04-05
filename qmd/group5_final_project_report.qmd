@@ -7,7 +7,8 @@ format:
 ---
 
 ```{r, message=FALSE}
-
+#| warning: false
+tictoc::tic()
 ## load R packages
 library(here)
 library(tidyverse)
@@ -41,6 +42,7 @@ In this project, we consulted with the Stackoverflow and Datanovia websites for 
 
 ## load dataset
 vaccine <- read_csv("data/vaccine.csv")
+
 
 ## clean dataset
 vaccine_dat <- vaccine %>% 
@@ -657,14 +659,29 @@ info_crit_table
 ```{r}
 
 ## obtain standardized stage-one residuals (school-level) manually
-condmean <- predict(lmm3) # obtain conditional means
+condmean <- predict(lmm3,allow.new.levels = TRUE) # obtain conditional means
 y <- vaccine_overall$overall_recode
 stg1r <- y - condmean
+```
+
+```{r}
+#| eval: false
 estsigma2 <- sigma(lmm3)^2
 estsigmamat <- estsigma2 * diag(dim(vaccine_overall)[1])
-# Cholesky decomposition - this step takes a long time
+# Cholesky decomposition - this step takes a long tim
+tictoc::tic()
 L <- chol(estsigmamat) 
+tictoc::toc()
+saveRDS(L,file=here("data","L.rds"))
+
+```
+
+```{r}
+L <- readRDS(here("data","L.rds"))
+tictoc::tic()
 stg1rstar <- solve(L) %*% stg1r
+tictoc::toc()
+saveRDS(stg1rstar,file=here("data","stg1rstar.rds"))
 head(stg1rstar)
 
 ## compare raw stage-one residuals and standardized residuals
@@ -684,13 +701,25 @@ ggplot(stg1resids, aes(x = resid, fill = rtype)) +
 qqnorm(stg1rstar, pch = 1)
 qqline(stg1rstar, col = "steelblue", lwd = 2)
 
-qqnorm(residuals(mod1 , type = "n")) # standardized residual
-qqline(residuals(mod1 , type = "n"))
+qqnorm(residuals(lmm3 , type = "n")) # standardized residual
+qqline(residuals(lmm3 , type = "n"))
 
 ## check normality of model residuals
 #qqnorm(residuals(lmm3), ylab="Sample Quantiles for residuals")
 #qqline(residuals(lmm3), col="red")
 
+```
+
+## Lagged residual plot
+
+```{r}
+vaccine_overall %>% 
+  mutate(rhat = stg1rstar) %>% 
+  group_by(school_id) %>% 
+  mutate(rhat1 = lag(rhat)) %>% 
+  ggplot(aes(y = rhat, x= rhat1))+
+  geom_point()+
+  labs(y = "Standardized Residual",x = "Lagged Standardized Residual")
 ```
 
 ## Plot standardized residuals against predicted mean
@@ -794,7 +823,11 @@ corr_table
 
 ```{r}
 
+
 ## Fit 3-level LMM model (Table 2)
+
+## fit 3-level LMM model
+
 lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
                 data = vaccine_mmr)
 summary(lmm3mmr)
@@ -808,6 +841,7 @@ confint(lmm3mmr, oldNames = FALSE)
 
 ```{r}
 
+
 ## 1) Fit linear regression model without random effects (base model)
 lr_mmr <- lm(mmr_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_mmr)
 summary(lr_mmr)
@@ -819,6 +853,11 @@ anova(lr_mmr)
 ```{r}
 
 ## Fit 2-level LMM model
+
+## fit 2-level LMM model
+
+
+
 lmm2mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_mmr)
 summary(lmm2mmr)
 
@@ -864,7 +903,11 @@ info_crit_table_mmr
 ## Diagnostics for stage-one residuals
 
 ```{r}
+
 #| eval: false
+
+
+
 ## unable to extract normalized residuals directly:
 ## https://stackoverflow.com/questions/73459709/how-does-one-compute-the-normalized-model-residuals-based-via-lme4-mermod-in-r
 ## https://www.rdocumentation.org/packages/lme4/versions/1.1-36/topics/residuals.merMod
@@ -902,6 +945,7 @@ stg1rstar_mmr <- solve(Lmmr) %*% stg1r_mmr
 tictoc::toc()
 saveRDS(stg1rstar_mmr,file=here("data","stg1rstar_mmr.rds"))
 
+
 head(stg1rstar_mmr)
 
 ## compare raw stage-one residuals and standardized residuals
@@ -911,16 +955,36 @@ stg1resids_mmr <- as.data.frame(cbind(rtype_mmr, as.numeric(resid_mmr)))
 
 # create plotp
 ggplot(stg1resids_mmr, aes(x = resid_mmr, fill = rtype_mmr)) +
+
+head(stg1rstar)
+
+## compare raw stage-one residuals and standardized residuals
+rtype <- c(rep("Raw", length(stg1r)), rep("Standardized", length(stg1r)))
+resid <- c(stg1r, stg1rstar)
+stg1resids <- as.data.frame(cbind(rtype, as.numeric(resid)))
+
+# create plotp
+ggplot(stg1resids, aes(x = resid, fill = rtype)) +
+
   geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
   labs(y = "Count", x = "Residuals", fill = "Type")
 
 ```
 
+
 ## Lagged residual plot
 
 ```{r}
-
+vaccine_mmr %>% 
+  mutate(rhat = stg1rstar_mmr) %>% 
+  group_by(school_id) %>% 
+  mutate(rhat1 = lag(rhat)) %>% 
+  ggplot(aes(y = rhat, x= rhat1))+
+  geom_point()+
+  labs(y = "Standardized Residual",x = "Lagged Standardized Residual")
 ```
+
+
 
 ## Normal QQ Plot of standardized residuals
 ```{r}
@@ -935,6 +999,16 @@ qqline(residuals(lmm3mmr , type = "n"))
 #qqline(residuals(lmm3), col="red")
 
 ```
+
+
+
+## Plot standardized residuals against predicted mean
+```{r}
+yhat <- predict(lmm3)
+plot(y = stg1rstar, x = yhat)
+
+```
+
 
 
 ```{r}
@@ -1119,4 +1193,5 @@ info_criterion <- rbind(info_crit_table, info_crit_table_mmr) %>%
         format = "html", escape = FALSE) 
 info_criterion
 
+tictoc::toc()
 ```
