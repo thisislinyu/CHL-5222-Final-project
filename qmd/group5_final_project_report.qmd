@@ -1028,7 +1028,7 @@ table_combine %>%
              nrow(table_overall)) %>% 
   
 add_header_above(c(" " = 1, " " = 2, "School year" = 2,
-                     "State spending (in $1,000)" = 2,
+                     "State spending in US$ (millions)" = 2,
                      "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
 ```
 
