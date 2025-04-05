@@ -621,7 +621,6 @@ confint(lmm2, oldNames = FALSE)
 
 ```
 
-
 ## Compare the three models using AIC and BIC
 
 ```{r}
@@ -652,14 +651,10 @@ info_crit_table
 
 ```
 
-### Check model diagnostics
+### Check model diagnostics of main model
 ## Diagnostics for stage-one residuals
 
 ```{r}
-
-## unable to extract normalized residuals directly:
-## https://stackoverflow.com/questions/73459709/how-does-one-compute-the-normalized-model-residuals-based-via-lme4-mermod-in-r
-## https://www.rdocumentation.org/packages/lme4/versions/1.1-36/topics/residuals.merMod
 
 ## obtain standardized stage-one residuals (school-level) manually
 condmean <- predict(lmm3) # obtain conditional means
@@ -759,10 +754,9 @@ ranef(lmm3)$state %>%
 
 ```
 
-### Intra-class clustering
+### Intra-class clustering (Table 3)
 
 ```{r}
-## Table 3
 
 ## extract random effects variances
 re_variance <- as.data.frame(VarCorr(lmm3))
@@ -800,7 +794,7 @@ corr_table
 
 ```{r}
 
-## Fit 3-level LMM model
+## Fit 3-level LMM model (Table 2)
 lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
                 data = vaccine_mmr)
 summary(lmm3mmr)
@@ -863,7 +857,7 @@ info_crit_table_mmr
 
 ```
 
-## Check model diagnostics
+## Check model diagnostics of main model
 ```{r}
 ## check normality of residuals
 qqnorm(residuals(lmm3mmr), ylab="Sample Quantiles for residuals")
@@ -917,7 +911,7 @@ ranef(lmm3mmr)$state %>%
 
 ```
 
-## Intra-class clustering
+## Intra-class clustering of main model (Table 3)
 
 ```{r}
 
