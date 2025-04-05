@@ -1037,7 +1037,13 @@ add_header_above(c(" " = 1, " " = 2, "School year" = 2,
 
 # combine overall vaccination and MMR vaccination rables
 info_criterion <- rbind(info_crit_table, info_crit_table_mmr) %>%
-  select(Outcome, Model, AIC, BIC)
+  select(Outcome, Model, AIC, BIC) %>%
+  # make it pretty
+    kable(col.names = c("Outcome",
+                        "Model",
+                        "AIC",
+                      "BIC"),
+        format = "html", escape = FALSE) 
 info_criterion
 
 ```
