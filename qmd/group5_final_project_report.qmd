@@ -357,7 +357,7 @@ scatter_plot0_mmr <- avg_vaccine_dat %>% filter(type=="MMR") %>%
   geom_point(size=5,shape=1) +  
   facet_grid(~type)+
   theme_bw()+
-  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  xlab("Public Spending per Student per School Year(in US Dollars)")+
   ylab("Averaged Vaccination Rate in Each State")+
   theme(
     text = element_text(size = 20),          # Overall text size
