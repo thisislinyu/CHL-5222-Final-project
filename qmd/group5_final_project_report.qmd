@@ -132,8 +132,6 @@ vaccine_mmr <- vaccine_dat %>%
 
 ```
 
-### ADD DESCRIPTIVE STATISTICS, FIGURES AND TABLES HERE ###
-
 ### Descriptive statistics
 
 ```{r}
@@ -563,6 +561,7 @@ mmr_map_plt
 ```
 
 
+### Fit Multi-level Linear Mixed Effects model: Overall vaccination rates
 
 $$
 E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State  electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ 
@@ -575,30 +574,11 @@ ${b}_k$ is the random effect of the *k*th state (level 3),
 ${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
 
 
-### Fit Multi-level Linear Mixed Effects model: Overall vaccination rates
-
-## Fit base model (marginal mean response)
-
-$$
-E(Y_{ijk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political vote}_k
-$$
-
-```{r, include = FALSE}
-
-## fit linear regression model 
-lr <- lm(overall_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_overall)
-options(scipen=999)
-summary(lr)
-anova(lr)
-
-```
-
-
-## Fit linear mixed effects model with random intercept for county and state (three-level model)
+## Fit main model: linear mixed effects model with random intercept for county and state (three-level model)
 
 ```{r}
 
-## fit 3-level LMM model
+## Fit 3-level LMM model (Table 2)
 lmm3 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
                 data = vaccine_overall)
 summary(lmm3)
@@ -608,7 +588,23 @@ confint(lmm3, oldNames = FALSE)
 
 ```
 
-## Fit linear mixed effects model with random intercept for state (two-level model)
+
+## Fit simpler models for comparison 
+
+$$
+E(Y_{ijk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political vote}_k
+$$
+
+```{r}
+
+## 1) Fit linear regression model without random effects (base model)
+lr <- lm(overall_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_overall)
+options(scipen=999)
+summary(lr)
+
+```
+
+## 2) Fit linear mixed effects model with random intercept for state (two-level model)
 
 $$
 E(Y_{ijk}|b_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political party}_k + {b}_k\ 
@@ -616,7 +612,7 @@ $$
 
 ```{r}
 
-## fit 2-level LMM model
+## Fit 2-level LMM model
 lmm2 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_overall)
 summary(lmm2)
 
@@ -626,27 +622,30 @@ confint(lmm2, oldNames = FALSE)
 ```
 
 
-## Compare three-level and two-level models using AIC and BIC
+## Compare the three models using AIC and BIC
 
 ```{r}
 
-## extract AIC and BIC from base model
+# extract AIC and BIC from base model
 info_crit_base <- data.frame(
             "AIC" = AIC(lr),
             "BIC" = BIC(lr)) %>%
-  mutate(Model = "Base model")
+  mutate(Model = "Base model",
+         Outcome = "Overall vaccination rate") 
 
-## extract AIC and BIC from two-level model
+# extract AIC and BIC from two-level model
 info_crit2 <- data.frame(
             "AIC" = AIC(lmm2),
             "BIC" = BIC(lmm2)) %>%
-  mutate(Model = "Two-level")
+  mutate(Model = "Two-level",
+         Outcome = "Overall vaccination rate")
 
-## extract AIC and BIC from three-level model
+# extract AIC and BIC from three-level model
 info_crit_table <- data.frame(
   "AIC" = AIC(lmm3),
   "BIC" = BIC(lmm3)) %>%
-  mutate(Model = "Three-level") %>%
+  mutate(Model = "Three-level",
+         Outcome = "Overall vaccination rate") %>%
   # add values from two-level model and base model
   rbind(info_crit2, info_crit_base)
 info_crit_table
@@ -760,9 +759,10 @@ ranef(lmm3)$state %>%
 
 ```
 
-## Intra-class clustering
+### Intra-class clustering
 
 ```{r}
+## Table 3
 
 ## extract random effects variances
 re_variance <- as.data.frame(VarCorr(lmm3))
@@ -786,6 +786,7 @@ corr_state <- as.data.frame(as.numeric(re_var_state / (re_var_resid + re_var_sta
   dplyr::rename(Correlation_coefficient = 1) %>%
   mutate(Type = "Schools in different counties within same state")
 
+## summarise results in table
 corr_table <- rbind(corr_county, corr_state) %>%
   select(Type, Correlation_coefficient)
 corr_table
@@ -795,22 +796,11 @@ corr_table
 
 ### Fit Linear Mixed Effects model: MMR vaccination rates
 
-## Fit base model (marginal mean response)
-
-```{r, include = FALSE}
-
-## fit linear regression model
-lr_mmr <- lm(mmr_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_mmr)
-summary(lr_mmr)
-anova(lr_mmr)
-
-```
-
-## Fit linear mixed effects model with random intercept for county and state (three-level model)
+## Fit main model: linear mixed effects model with random intercept for county and state (three-level model)
 
 ```{r}
 
-## fit 3-level LMM model
+## Fit 3-level LMM model
 lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
                 data = vaccine_mmr)
 summary(lmm3mmr)
@@ -820,11 +810,21 @@ confint(lmm3mmr, oldNames = FALSE)
 
 ```
 
-## Fit linear mixed effects model with random intercept for state (two-level model)
+## Fit simpler models for comparison 
 
 ```{r}
 
-## fit 2-level LMM model
+## 1) Fit linear regression model without random effects (base model)
+lr_mmr <- lm(mmr_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_mmr)
+summary(lr_mmr)
+anova(lr_mmr)
+
+```
+## 2) Fit linear mixed effects model with random intercept for state (two-level model)
+
+```{r}
+
+## Fit 2-level LMM model
 lmm2mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_mmr)
 summary(lmm2mmr)
 
@@ -841,19 +841,22 @@ confint(lmm2mmr, oldNames = FALSE)
 info_crit_mmr_base <- data.frame(
             "AIC" = AIC(lr_mmr),
             "BIC" = BIC(lr_mmr)) %>%
-  mutate(Model = "Base model")
+  mutate(Model = "Base model",
+         Outcome = "MMR vaccination rate")
 
 ## extract AIC and BIC from two-level model
 info_crit_mmr2 <- data.frame(
             "AIC" = AIC(lmm2mmr),
             "BIC" = BIC(lmm2mmr)) %>%
-  mutate(Model = "Two-level")
+  mutate(Model = "Two-level",
+         Outcome = "MMR vaccination rate")
 
 ## extract AIC and BIC from three-level model
 info_crit_table_mmr <- data.frame(
   "AIC" = AIC(lmm3mmr),
   "BIC" = BIC(lmm3mmr)) %>%
-  mutate(Model = "Three-level") %>%
+  mutate(Model = "Three-level",
+         Outcome = "MMR vaccination rate") %>%
   # add values from two-level model and base model
   rbind(info_crit_mmr2, info_crit_mmr_base)
 info_crit_table_mmr
@@ -1027,4 +1030,14 @@ table_combine %>%
 add_header_above(c(" " = 1, " " = 2, "School year" = 2,
                      "State spending (in $1,000)" = 2,
                      "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
+```
+
+### Supplementary Table 2: AIC and BIC to compare models
+```{r}
+
+# combine overall vaccination and MMR vaccination rables
+info_criterion <- rbind(info_crit_table, info_crit_table_mmr) %>%
+  select(Outcome, Model, AIC, BIC)
+info_criterion
+
 ```
