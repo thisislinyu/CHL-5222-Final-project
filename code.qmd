@@ -1,0 +1,1243 @@
+---
+title: "CHL5222 Group E Final Project Report"
+subtitle: "Association between public spending on education and school-aged vaccination coverage rates in the US"
+author: "Jannie Leung, Lin Yu, Barrett Buhler, Nhat Chau, Isha Sharma"
+format:
+  html:
+    toc: true
+    number-tables: true
+    number-figures: true
+---
+
+A Description of the `data` folder:  
+
+- vaccine.csv is the original data we received;
+
+- us_states.rds is the US map data that we used to generate Figure 1. 
+
+Other notes:        
+
+- We obtained the Electoral College results data from the National Archives. This data was then added to the analytical dataset in the code chunk named `electoral college`.
+
+- We outlined the approach for performing residual diagnostics on level-one residuals in the code chunks titled `stage one residual overall` and `stage one residual MMR`. owever, we were unable to obtain the results due to computational limitations arising from the large sample size.
+
+
+A summary of the R version and package information is listed below:
+```{r}
+R.version
+sessionInfo() 
+
+```
+
+
+```{r, message=FALSE}
+#| warning: false
+tictoc::tic()
+## load R packages
+library(here)
+library(tidyverse)
+library(tinytex)
+library(PupillometryR)
+library(DT)
+library(lme4)
+library(car)
+library(knitr)
+library(kableExtra)
+library(table1)
+library(readr)
+library(tibble)
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(tigris)
+library(ggpubr)
+
+# set report formatting
+knitr::opts_knit$set(root.dir = here())
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+theme_set(theme_bw(base_size = 12)) # Use black/white theme and increase font size for all ggplot figures
+
+```
+
+
+In this project, we consulted with the Stackoverflow and Datanovia websites for data analysis.
+
+
+# PART 1: Exploratory Data Analysis
+
+We cleaned the original data before model building.
+
+```{r electoral college}
+## load dataset
+vaccine <- read_csv("data/vaccine.csv")
+
+
+## clean dataset
+vaccine_dat <- vaccine %>% 
+  
+  # recode vaccination coverage rates with -1 as missing
+  mutate(overall_recode = ifelse(overall == -1, NA, overall),
+         mmr_recode = ifelse(mmr == -1, NA, mmr)) %>%   
+  
+  # recode missing or 2017 school year as 2017-2018 (as per dataset description)
+  mutate(year_recode = case_when(
+    year == "null" ~ "2017-18",
+    year == "2017" ~ "2017-18",
+    TRUE ~ year)) %>%
+  
+  # create state spending per pupil variable (in US$1million)
+  mutate(spend_person = round(statespending2016/schagepop2016/1000, 2)) %>%
+  
+ # clean county name
+  mutate(county = case_when(
+    county == "State Of Illinois" ~ NA_character_,
+    county == "BLAINE" ~ "Blaine",
+    county == "ADA" ~ "Ada",
+    county == "#N/A" ~ NA_character_,
+    county == "Oklahoma/Tulsa" ~ "Oklahoma",
+    county == "Walwroth" ~ "Walworth",
+    county == "adams" ~ "Adams",
+    county == "Colorado BOCS" ~ "Denver",
+    county == "New Hampshire" ~ NA_character_,
+    TRUE ~ county)) %>%
+  
+  # standardize county and state with uppercase
+  mutate(county = toupper(county)) %>%
+  mutate(state = toupper(state)) %>%
+  
+  # Add state political electoral college as covariate
+  mutate(state_political_vote = case_when(
+    state=="ARIZONA" ~ "Swing State",
+    state=="ARKANSAS" ~ "Republican Party",
+    state=="CALIFORNIA" ~ "Democratic Party",  
+    state=="COLORADO" ~ "Democratic Party",     
+    state=="CONNECTICUT" ~ "Democratic Party", 
+    state=="FLORIDA" ~ "Swing State",      
+    state=="IDAHO" ~ "Republican Party",        
+    state=="ILLINOIS" ~ "Democratic Party",
+    state=="IOWA" ~ "Republican Party",         
+    state=="MAINE" ~ "Swing State",  
+    state=="MASSACHUSETTS" ~ "Democratic Party", 
+    state=="MICHIGAN" ~ "Republican Party", 
+    state=="MINNESOTA" ~ "Swing State", 
+    state=="MISSOURI" ~ "Republican Party", 
+    state=="MONTANA" ~ "Republican Party",     
+    state=="NEW JERSEY" ~ "Democratic Party",  
+    state=="NEW YORK" ~ "Democratic Party", 
+    state=="NORTH CAROLINA" ~ "Swing State", 
+    state=="NORTH DAKOTA" ~ "Republican Party", 
+    state=="OHIO" ~ "Republican Party",         
+    state=="OKLAHOMA" ~ "Republican Party",     
+    state=="OREGON" ~ "Democratic Party",       
+    state=="PENNSYLVANIA" ~ "Swing State", 
+    state=="RHODE ISLAND" ~ "Democratic Party", 
+    state=="SOUTH DAKOTA" ~ "Republican Party", 
+    state=="TENNESSEE" ~ "Republican Party",    
+    state=="TEXAS" ~ "Republican Party", 
+    state=="UTAH" ~ "Republican Party", 
+    state=="VERMONT" ~ "Democratic Party",      
+    state=="VIRGINIA" ~ "Democratic Party",     
+    state=="WASHINGTON" ~ "Democratic Party",  
+    state=="WISCONSIN" ~ "Swing State"
+    )) %>%
+  
+    # assign Swing State as reference category
+    mutate(state_political_vote = factor(state_political_vote, levels = c(
+      "Swing State",
+      "Democratic Party",
+      "Republican Party"))) %>%
+    
+  # create unique school id
+  arrange(state, county, city, name) %>%
+  mutate(school_id = row_number())
+
+
+## create dataset for schools with overall vaccination rates
+vaccine_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode))
+
+## create dataset for schools with MMR vaccination rates
+vaccine_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode))
+
+```
+
+
+## Table 1: Summary Statistics
+
+We first generated a descriptive summary of the data by outcome variable
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: Table 1. Descriptive summary of variables by outcome
+state_count_mmr <- vaccine_dat %>% 
+  filter(!is.na(mmr_recode)) %>% 
+  summarise(n_states = n_distinct(state))
+state_count_overall <- vaccine_dat %>% 
+  filter(!is.na(overall_recode)) %>% 
+  summarise(n_states = n_distinct(state))
+
+county_stats_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  group_by(state) %>%
+  summarise(n_counties = n_distinct(county)) %>%
+  summarise(
+    total = sum(n_counties),
+    median = median(n_counties),
+    min = min(n_counties),
+    max = max(n_counties)
+  )
+
+county_stats_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  group_by(state) %>%
+  summarise(n_counties = n_distinct(county)) %>%
+  summarise(
+    total = sum(n_counties),
+    median = median(n_counties),
+    min = min(n_counties),
+    max = max(n_counties)
+  )
+
+school_stats_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  group_by(state) %>%
+  group_by(year_recode) %>% 
+  summarise(n_schools = n_distinct(name)) %>%
+  summarise(
+    total = sum(n_schools),
+    median = median(n_schools),
+    min = min(n_schools),
+    max = max(n_schools)
+  )
+
+school_stats_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  group_by(state) %>%
+  summarise(n_schools = n_distinct(name)) %>%
+  summarise(
+    total = sum(n_schools),
+    median = median(n_schools),
+    min = min(n_schools),
+    max = max(n_schools)
+  )
+
+
+spending_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>% 
+  group_by(state) %>% 
+  summarise(spend = unique(spend_person)) %>% 
+  ungroup() %>% 
+  summarise(mean_spend_thousand = round(mean(spend, na.rm = TRUE), 2),
+            sd_spend_thousand = round(sd(spend, na.rm = TRUE), 2))
+
+
+spending_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>% 
+  group_by(state) %>% 
+  summarise(spend = unique(spend_person)) %>% 
+  ungroup() %>% 
+  summarise(mean_spend_thousand = round(mean(spend, na.rm = TRUE), 2),
+            sd_spend_thousand = round(sd(spend, na.rm = TRUE), 2))
+
+mean_mmr <- vaccine_dat %>%
+  filter(!is.na(mmr_recode)) %>%
+  summarise(mean_mmr = round(mean(mmr_recode, na.rm = TRUE), 1),
+            sd_mmr = round(sd(mmr_recode, na.rm = TRUE), 1))
+
+mean_overall <- vaccine_dat %>%
+  filter(!is.na(overall_recode)) %>%
+  summarise(mean_overall = round(mean(overall_recode, na.rm = TRUE), 2),
+            sd_overall = round(sd(overall_recode, na.rm = TRUE), 2))
+
+summary_table <- tibble(
+  `Outcome Variable` = c("MMR", "Overall"),
+  `State (Count)` = c(
+    n_distinct(vaccine_dat$state[!is.na(vaccine_dat$mmr_recode)]),
+    n_distinct(vaccine_dat$state[!is.na(vaccine_dat$overall_recode)])
+),
+
+`County Count (Sum)` = c(
+  paste(county_stats_mmr$total),
+  paste(county_stats_overall$total)
+),
+
+`Median County per State (Min, Max)` = c(
+  paste(county_stats_mmr$median, 
+        "[", county_stats_mmr$min, ",", county_stats_mmr$max, "]"),
+  paste(county_stats_overall$median, 
+        "[", county_stats_overall$min, ",", county_stats_overall$max, "]")
+),
+
+`School Count (Sum)` = c(
+  paste(school_stats_mmr$total),
+  paste(school_stats_overall$total)
+),
+
+ `Median School per State (Min, Max)` = c(
+  paste(school_stats_mmr$median, 
+        "[", school_stats_mmr$min, ",", school_stats_mmr$max, "]"),
+  paste(school_stats_overall$median, 
+        "[", school_stats_overall$min, ",", school_stats_overall$max, "]")
+),
+
+  `Average Spending per Person in $1000 USD` = c(
+    paste(spending_mmr$mean_spend_thousand, "(", spending_mmr$sd_spend_thousand, ")"),
+    paste(spending_overall$mean_spend_thousand, "(", spending_overall$sd_spend_thousand, ")")
+),
+
+  `Schools in 2017–18` = c(
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$mmr_recode)])["2017-18"],
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$overall_recode)])["2017-18"]
+),
+
+  `Schools in 2018–19` = c(
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$mmr_recode)])["2018-19"],
+    table(vaccine_dat$year_recode[!is.na(vaccine_dat$overall_recode)])["2018-19"]
+),
+
+  `Mean Vaccination Rate (%)` = c(
+    paste(mean_mmr$mean_mmr, "(", mean_mmr$sd_mmr, ")"),
+    paste(mean_overall$mean_overall, "(", mean_overall$sd_overall, ")")
+))
+
+summary_table %>%
+  kable(format = "html", escape = FALSE) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## Table 2: Summary Statistics (cont'd)
+
+We also described the state electoral college results in 2016
+
+```{r}
+#| tbl-cap: Table 2. Vaccination rates by political party
+## summarize count and percent electoral college votes by state for MMR outcome
+pol_vote_mmr <- vaccine_mmr %>%
+  select(state, state_political_vote) %>%
+  distinct() %>%
+  mutate(n_states = n_distinct(state)) %>%
+  group_by(state_political_vote) %>% 
+  summarise(n_state_vote_mmr = n(),
+            perc_state_vote_mmr = round(n_state_vote_mmr / n_states*100,2)) %>%
+  ungroup() %>%
+  distinct() %>%
+  mutate(state_vote_mmr = paste0(n_state_vote_mmr, " (", perc_state_vote_mmr, "%)")) %>%
+  select(state_political_vote, state_vote_mmr)
+
+## summarize count and percent electoral college votes by state for overall outcome
+pol_vote_overall <- vaccine_overall %>%
+  select(state, state_political_vote) %>%
+  distinct() %>%
+  mutate(n_states = n_distinct(state)) %>%
+  group_by(state_political_vote) %>% 
+  summarise(n_state_vote = n(),
+            perc_state_vote = round(n_state_vote / n_states*100,2)) %>%
+  ungroup() %>%
+  distinct() %>%
+  mutate(state_vote = paste0(n_state_vote, " (", perc_state_vote, "%)")) %>%
+  select(state_political_vote, state_vote)
+
+## create final table
+pol_vote_table <- pol_vote_mmr %>%
+  left_join(pol_vote_overall, by = "state_political_vote") %>%
+  mutate(state_political_vote = as.character(state_political_vote)) %>%
+  arrange(state_political_vote) %>%
+  
+  kable(col.names = c("Political party",
+                      "MMR Vaccination: n (%) states",
+                      "Overall Vaccination: n (%) states"),
+        format = "html", escape = FALSE) 
+pol_vote_table
+
+```
+
+## Figure 1: Averaged vaccination rates
+
+We showed the averaged vaccination rates reported by states. (States in red had reported vaccination rates, with darker shades representing higher vaccination rates. States in gray were missing vaccination rates.)
+
+
+```{r}
+#### Calulate averaged vaccination rate by state based on public spending per student (in $1,000 USD)
+avg_overall_dat <- full_join(
+  vaccine_overall %>% 
+  group_by(state) %>% 
+  summarise(avg_overall = mean(overall)),
+
+vaccine_overall %>% 
+  select(state,spend_person,statespending2016) %>% unique(),
+by= c("state")
+)
+
+# avg_overall_dat %>% datatable()
+
+avg_mmr_dat <- full_join(
+  vaccine_mmr %>% 
+  group_by(state) %>% 
+  summarise(avg_mmr = mean(mmr)),
+
+vaccine_mmr %>% 
+  select(state,spend_person,statespending2016) %>% unique(),
+by= c("state")
+)
+# avg_mmr_dat %>% datatable()
+
+avg_overall_dat$type = "Overall"
+
+colnames(avg_overall_dat) <- c("state", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_mmr_dat$type ="MMR"
+
+colnames(avg_mmr_dat) <- c("state", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_vaccine_dat <- rbind(avg_overall_dat,avg_mmr_dat)
+
+avg_vaccine_dat$type <- factor(avg_vaccine_dat$type,
+                               levels = c("Overall","MMR"),
+                               labels =c("Overall","MMR") )
+
+```
+
+
+```{r}
+#### Figure 1A: Averaged Overall Vaccination Rate by State
+
+# Load US states map data
+# us_states <- st_as_sf(states())
+# saveRDS(here("data","us_states.rds"))
+us_states <- readRDS(here("data","us_states.rds"))
+
+overall_map <- avg_overall_dat %>% 
+  mutate(state = tolower(state))
+
+us_states <- us_states %>%
+  mutate(NAME = tolower(NAME))
+
+geo_dat <- left_join(us_states, overall_map, by = c("NAME" = "state")) %>% 
+  unique()
+
+geo_dat <- st_as_sf(geo_dat)
+
+# Create a map with text labels for each state
+overall_map_plt <- ggplot(data = geo_dat) +
+  geom_sf(aes(fill = avg_vaccine)) +  # Color the states by spending
+  # scale_fill_viridis_c() +  # Use the 'viridis' color scale
+   scale_fill_gradientn(colors = c("#f4e1d2","#f18973", "#bc5a45", "#9e3d2e"),
+                        na.value = "#D3D3D3"  ) + 
+
+  theme_minimal() +  # Use a minimal theme
+  labs(
+   # title = "Public Education Spending in Each State",
+    fill = ""
+  ) + 
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) + 
+  coord_sf(
+    xlim = c(-125, -66),  # Longitude limits (approximate for the U.S.)
+    ylim = c(24, 50)      # Latitude limits (approximate for the U.S.)
+  ) +
+  xlab("")+
+  ylab("")+
+ # geom_sf_text(aes(label = NAME), size = 1.5, color = "black")+
+ theme(
+  axis.title = element_blank(),
+  axis.text = element_blank(),
+  axis.ticks = element_blank(),
+  panel.grid = element_blank()
+)
+
+```
+
+
+```{r}
+
+#### Figure 1B: Averaged MMR Vaccination Rate by State
+mmr_map <- avg_mmr_dat %>%  mutate(state = tolower(state))
+
+us_states <- us_states %>%
+  mutate(NAME = tolower(NAME))
+
+geo_dat <- left_join(us_states, mmr_map, by = c("NAME" = "state"))
+geo_dat <- st_as_sf(geo_dat)
+
+# Create a map with text labels for each state
+mmr_map_plt <- ggplot(data = geo_dat) +
+  geom_sf(aes(fill = avg_vaccine)) +  # Color the states by spending
+  # scale_fill_viridis_c() +  # Use the 'viridis' color scale
+   # scale_fill_gradient(low = "#feb236", high = "#ff7b25")+
+ scale_fill_gradientn(colors = c("#f4e1d2","#f18973", "#bc5a45", "#9e3d2e"),
+                        na.value = "#D3D3D3"  ) +  
+  theme_minimal() +  # Use a minimal theme
+  labs(
+   # title = "Public Education Spending in Each State",
+    fill = ""
+  ) + 
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) + 
+  coord_sf(
+    xlim = c(-125, -66),  # Longitude limits (approximate for the U.S.)
+    ylim = c(24, 50)      # Latitude limits (approximate for the U.S.)
+  ) +
+  xlab("")+
+  ylab("")+
+ # geom_sf_text(aes(label = NAME), size = 1.5, color = "black")+
+ theme(
+  axis.title = element_blank(),
+  axis.text = element_blank(),
+  axis.ticks = element_blank(),
+  panel.grid = element_blank()
+)
+  # STUSPS
+
+# map_plts <- ggarrange(overall_map_plt,mmr_map_plt)
+# 
+# ggsave(map_plts,file=here("figures","map_plts.png"),dpi=300)
+
+# ggsave(overall_map_plt,file=here("figures","overall_map_plt.png"),dpi=300)
+
+# ggsave(mmr_map_plt,file=here("figures","mmr_map_plt.png"),dpi=300)
+```
+
+```{r}
+#| fig-cap: "Figure 1. Averaged vaccination rates reported by states"
+#| fig-subcap: ["(a) Averaged Overall Vaccination Rate by State ", "(b) Averaged MMR Vaccination Rate by State"]
+#| layout-ncol: 2
+#| echo: false
+overall_map_plt
+mmr_map_plt
+```
+
+
+## Figure 2: Averaged vaccination rates (cont'd)
+
+Scatterplots display the averaged vaccination rates for counties and states, based on public spending per student (in $1,000 USD). Each dot represents a different county.
+
+```{r}
+#| fig-width: 16
+#| fig-height: 8
+
+## prepare data
+scatter_plot_overall <- avg_vaccine_dat %>% filter(type=="Overall") %>% 
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(size=5,shape=1) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Studnet per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each State")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+    legend.text = element_text(size = 18),   # Legend text size
+    legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+scatter_plot_mmr <- avg_vaccine_dat %>% filter(type=="MMR") %>% 
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+  geom_smooth(method = "lm", se = FALSE,color="gray",linetype="dashed",size=2) +  # One overall trend line
+  geom_point(size=5,shape=1) +  
+  facet_grid(~type)+
+  theme_bw()+
+  xlab("Public Spending per Student per School Year(in US Dollars)")+
+  ylab("Averaged Vaccination Rate in Each State")+
+  theme(
+    text = element_text(size = 20),          # Overall text size
+    axis.text = element_text(size = 18),     # Axis tick labels
+    axis.title = element_text(size = 22, face = "bold"), # Axis titles
+    legend.text = element_text(size = 18),   # Legend text size
+    legend.title = element_text(size = 20, face = "bold"), # Legend title
+    strip.text = element_text(size = 20, face = "bold")  # Facet labels
+  )
+
+```
+
+
+
+Calulate average vaccination rates by county based on public spending per student (in $1,000 USD)
+
+```{r, warning = FALSE}
+#### Calulate averaged vaccination rate by county based on public spending per student (in $1,000 USD)
+
+avg_overall_dat_county <- full_join(
+  vaccine_overall %>% 
+  group_by(state,county) %>% 
+  summarise(avg_overall = mean(overall)),
+
+vaccine_overall %>% 
+  select(state,county,spend_person,statespending2016) %>% unique(),
+by= c("state","county")
+)
+
+# avg_overall_dat_county %>% datatable()
+
+avg_mmr_dat_county <- full_join(
+  vaccine_mmr %>% 
+  group_by(state,county) %>% 
+  summarise(avg_mmr = mean(mmr)),
+
+vaccine_mmr %>% 
+  select(state,county,spend_person,statespending2016) %>% unique(),
+by= c("state","county")
+)
+# avg_mmr_dat_county %>% datatable()
+
+avg_overall_dat_county$type = "Overall"
+
+colnames(avg_overall_dat_county) <- c("state", "county","avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_mmr_dat_county$type ="MMR"
+
+colnames(avg_mmr_dat_county) <- c("state","county", "avg_vaccine", "spend_person", "statespending2016", "type"
+)
+
+avg_vaccine_dat_county <- rbind(avg_overall_dat_county,avg_mmr_dat_county)
+
+avg_vaccine_dat_county$type <- factor(avg_vaccine_dat_county$type,
+                               levels = c("Overall","MMR"),
+                               labels =c("Overall","MMR") )
+
+```
+
+
+Plot averaged vaccination rate by county based on public spending per student (in $1,000 USD)
+
+```{r, message = FALSE}
+#| fig-width: 16
+#| fig-height: 8
+#| fig-cap: Figure 2. Averaged Vaccination Rate by County
+scatter_res <- avg_vaccine_dat_county %>% 
+  ggplot(aes(x = spend_person, y = avg_vaccine)) +
+   geom_smooth(method = "lm", se = FALSE, color = "gray", linetype = "dashed", size = 2) +  # Overall trend line
+  geom_point(aes(color = state), size = 5) +  # Points from avg_overall_dat_county
+  geom_point(data = avg_vaccine_dat, aes(x = spend_person, y = avg_vaccine), color = "black", size = 5, shape = 1) + 
+ facet_wrap(~type) + 
+   #geom_line(data = avg_overall_dat, aes(x = spend_person, y = avg_vaccine), color = "black", size = 0.5, shape = 1)
+  theme_bw() +
+  xlab("Public Spending per Student per School Year (in US Dollars)") +
+  ylab("Averaged Vaccination Rate in Each County") +
+  theme(
+    text = element_text(size = 18),
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 20, face = "bold"),
+    legend.text = element_text(size = 14,face = "bold"),
+    legend.title = element_text(size = 16,face = "bold"),
+    strip.text = element_text(size = 18, face = "bold")
+  )
+
+scatter_res
+
+```
+
+Plot averaged vaccination rate by state based on public spending per student (in $1,000 USD)
+```{r}
+#| fig-cap: "Averaged Vaccination Rate by State"
+#| fig-subcap: ["(a) Averaged Overall Vaccination Rate by State", "(b) Averaged MMR Vaccination Rate by state"]
+#| layout-ncol: 2
+#| echo: false
+#| fig-width: 16
+scatter_plot_overall
+scatter_plot_mmr
+```
+
+# PART 2: Model and Diagnostics
+
+In this part, we show how we built our model, and how the diagnostics were done. Specifically, `PART 2.1` is for overall vaccination rate outcome, and `PART 2.2` is for MMR vaccination rate outcome
+
+## PART 2.1 : overall vaccination rate
+
+### Model 1: Multi-level Linear Mixed Effects model
+
+We first fit a linear mixed effects model with random intercept for county and state (three-level model)
+$$
+E(Y_{ijk}|b^{(3)}_{k},b^{(2)}_{jk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State  electoral college}_k + {b}^{(3)}_k\ + {b}^{(2)}_{jk}\ 
+$$
+
+where Y is vaccination rate (Overall and MMR) for *i*th school in *j*th county and *k*th state (continuous),
+State spending is in US dollars per student of the *k*th state (continuous),
+School year of the *i*th school (categorical, with 2017-18 as reference category),
+State electoral college is the political party that the *k*th state predominantly voted for in 2017-2018 (categorical, with Swing State (vote fluctuates between parties) as the reference category),
+${b}_k$ is the random effect of the *k*th state (level 3),
+${b}_jk$ is the random effect for the *j*th county in the *k*th (level 2).
+
+
+
+###  Table 3: three-level fixed effects model output
+
+Fixed effects estimates from linear mixed effects models for school-level overall vaccination rates.
+```{r}
+## Fit 3-level LMM model 
+lmm3 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
+                data = vaccine_overall)
+summary(lmm3)
+
+## obtain confidence intervals
+confint(lmm3, oldNames = FALSE)
+
+```
+
+We then tried some simpler models (Model 2 and Model 3) for comparison. 
+
+### Model 2: Linear regression model
+
+$$
+E(Y_{ijk}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political vote}_k
+$$
+We fit a linear regression model without random effects (base model)
+
+```{r}
+
+lr <- lm(overall_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_overall)
+options(scipen=999)
+summary(lr)
+
+```
+
+### Model 3: Two-level linear mixed effect model
+
+We also fit linear mixed effects model with random intercept for state (two-level model)
+
+$$
+E(Y_{ijk}|b_{k}) = \beta_{1} + \beta_{2}\text{State spending}_k + \beta_{3}\text{School year}_i + \beta_{4}\text{State political party}_k + {b}_k\ 
+$$
+
+```{r}
+## Fit 2-level LMM model
+lmm2 <- lmer(overall_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_overall)
+summary(lmm2)
+
+## obtain confidence intervals
+confint(lmm2, oldNames = FALSE)
+
+```
+
+### Compare Model 1, Model 2, Model 3
+
+We used AIC and BIC for model selection
+
+```{r}
+# extract AIC and BIC from base model
+info_crit_base <- data.frame(
+            "AIC" = AIC(lr),
+            "BIC" = BIC(lr)) %>%
+  mutate(Model = "Base model",
+         Outcome = "Overall vaccination rate") 
+
+# extract AIC and BIC from two-level model
+info_crit2 <- data.frame(
+            "AIC" = AIC(lmm2),
+            "BIC" = BIC(lmm2)) %>%
+  mutate(Model = "Two-level",
+         Outcome = "Overall vaccination rate")
+
+# extract AIC and BIC from three-level model
+info_crit_table <- data.frame(
+  "AIC" = AIC(lmm3),
+  "BIC" = BIC(lmm3)) %>%
+  mutate(Model = "Three-level",
+         Outcome = "Overall vaccination rate") %>%
+  # add values from two-level model and base model
+  rbind(info_crit2, info_crit_base)
+info_crit_table
+
+```
+
+Since Model 1 had the lowest AIC and BIC values, we used it as our final model. 
+
+### Check model diagnostics of Model 1
+
+#### Diagnostics for stage-one residuals
+
+```{r stage one residual overall}
+#| eval: false
+
+## obtain standardized stage-one residuals (school-level) manually
+## this step takes a long time to run so this code chunk was excluded from the html output
+
+condmean <- predict(lmm3,allow.new.levels = TRUE) # obtain conditional means
+y <- vaccine_overall$overall_recode
+
+stg1r <- y - condmean
+
+estsigma2 <- sigma(lmm3)^2
+estsigmamat <- estsigma2 * diag(dim(vaccine_overall)[1])
+# Cholesky decomposition - this step takes a long tim
+tictoc::tic()
+L <- chol(estsigmamat) 
+tictoc::toc()
+saveRDS(L,file=here("data","L.rds"))
+
+L <- readRDS(here("data","L.rds"))
+tictoc::tic()
+stg1rstar <- solve(L) %*% stg1r
+tictoc::toc()
+saveRDS(stg1rstar,file=here("data","stg1rstar.rds"))
+head(stg1rstar)
+
+## compare raw stage-one residuals and standardized residuals
+rtype <- c(rep("Raw", length(stg1r)), rep("Standardized", length(stg1r)))
+resid <- c(stg1r, stg1rstar)
+stg1resids <- as.data.frame(cbind(rtype, as.numeric(resid)))
+
+# create plot
+ggplot(stg1resids, aes(x = resid, fill = rtype)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  labs(y = "Count", x = "Residuals", fill = "Type")
+
+## Normal QQ Plot of standardized residuals
+qqnorm(stg1rstar, pch = 1)
+qqline(stg1rstar, col = "steelblue", lwd = 2)
+
+qqnorm(residuals(lmm3 , type = "n")) # standardized residual
+qqline(residuals(lmm3 , type = "n"))
+
+## Lagged residual plot
+vaccine_overall %>% 
+  mutate(rhat = stg1rstar) %>% 
+  group_by(school_id) %>% 
+  mutate(rhat1 = lag(rhat)) %>% 
+  ggplot(aes(y = rhat, x= rhat1))+
+  geom_point()+
+  labs(y = "Standardized Residual",x = "Lagged Standardized Residual")
+```
+
+
+#### standardized residuals against predicted mean
+
+```{r}
+#| eval: false
+yhat <- predict(lmm3)
+plot(y = stg1rstar, x = yhat)
+
+```
+
+
+#### Diagnostics for random effects
+
+```{r}
+#| fig-cap: Normal qqplot of the county-level random effects
+bjkhat <- ranef(lmm3, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+```
+
+
+```{r}
+#| fig-cap: Normal qqplot of the state-level random effects
+bkhat <- ranef(lmm3, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+#| fig-cap: Histogram of county random effects residuals
+ranef(lmm3)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+
+```{r}
+#| fig-cap: Histogram of state random effects residuals
+ranef(lmm3)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+### Table 4: Intra-class clustering
+
+Random effect variances and intra-class correlation coefficients from linear mixed effects models for school-level overall vaccination rate.
+
+```{r}
+
+## extract random effects variances
+re_variance <- as.data.frame(VarCorr(lmm3))
+
+# create vector for county random effect variance
+re_var_county <- re_variance %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state <- re_variance %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid <- re_variance %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in the same county within the same state
+corr_county <- as.data.frame(as.numeric(re_var_county + re_var_state) / (re_var_resid + re_var_state + re_var_county)) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in same county")
+
+## correlation between two schools in different counties but within the same state
+corr_state <- as.data.frame(as.numeric(re_var_state / (re_var_resid + re_var_state + re_var_county))) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in different counties within same state")
+
+## summarise results in table
+corr_table <- rbind(corr_county, corr_state) %>%
+  select(Type, Correlation_coefficient)
+corr_table
+
+```
+
+## PART 2.2: MMR vaccination rate
+
+In the following part, we built a model for MMR vaccination rate.
+
+### Model 4: Fit Linear Mixed Effects model
+
+Fit main model: linear mixed effects model with random intercept for county and state (three-level model)
+
+
+### Table 3: three-level fixed effects model output
+
+Fixed effects estimate from linear mixed effects models for school-level Measles, Mumps, and Rubella (MMR) vaccination rates.
+```{r}
+## fit 3-level LMM model
+lmm3mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state) + (1 | county),
+                data = vaccine_mmr)
+summary(lmm3mmr)
+
+## obtain confidence intervals
+confint(lmm3mmr, oldNames = FALSE)
+
+```
+
+
+### Model 5: linear regression model (base model)
+
+```{r}
+## Fit linear regression model without random effects (base model)
+lr_mmr <- lm(mmr_recode ~ spend_person + year_recode + state_political_vote, data = vaccine_mmr)
+summary(lr_mmr)
+anova(lr_mmr)
+
+
+```
+### Model 6: two-level linear mixed effect model
+
+We also fit linear mixed effects model with random intercept for state (two-level model)
+
+```{r}
+## Fit 2-level LMM model
+lmm2mmr <- lmer(mmr_recode ~ spend_person + year_recode + state_political_vote + (1 | state), data = vaccine_mmr)
+summary(lmm2mmr)
+
+## obtain confidence intervals
+confint(lmm2mmr, oldNames = FALSE)
+
+```
+
+### Compare Model 4, Model 5, and Model 6
+We also compared the model fit of Model 4, 5, and 6 using AIC and BIC
+
+```{r}
+## extract AIC and BIC from base model
+info_crit_mmr_base <- data.frame(
+            "AIC" = AIC(lr_mmr),
+            "BIC" = BIC(lr_mmr)) %>%
+  mutate(Model = "Base model",
+         Outcome = "MMR vaccination rate")
+
+## extract AIC and BIC from two-level model
+info_crit_mmr2 <- data.frame(
+            "AIC" = AIC(lmm2mmr),
+            "BIC" = BIC(lmm2mmr)) %>%
+  mutate(Model = "Two-level",
+         Outcome = "MMR vaccination rate")
+
+## extract AIC and BIC from three-level model
+info_crit_table_mmr <- data.frame(
+  "AIC" = AIC(lmm3mmr),
+  "BIC" = BIC(lmm3mmr)) %>%
+  mutate(Model = "Three-level",
+         Outcome = "MMR vaccination rate") %>%
+  # add values from two-level model and base model
+  rbind(info_crit_mmr2, info_crit_mmr_base)
+info_crit_table_mmr
+
+```
+
+### Check model diagnostics of Model 4
+
+#### Diagnostics for stage-one residuals
+
+```{r stage one residual MMR}
+#| eval: false
+
+## obtain standardized stage-one residuals (school-level) manually
+## this step takes a long time to run so this code chunk was excluded from the html output
+
+condmean <- predict(lmm3mmr, newdata = vaccine_mmr, allow.new.levels = TRUE)
+y <- vaccine_mmr$mmr_recode
+
+stg1r_mmr <- y - condmean
+estsigma2 <- sigma(lmm3mmr)^2
+estsigmamat <- estsigma2 * diag(dim(vaccine_mmr)[1])
+# Cholesky decomposition - this step takes a long time
+tictoc::tic()
+Lmmr <- chol(estsigmamat) 
+tictoc::toc()
+saveRDS(Lmmr,file=here("data","Lmmr.rds"))
+saveRDS(stg1r_mmr,file=here("data","stg1r_mmr.rds"))
+
+
+Lmmr <- readRDS(here("data","Lmmr.rds"))
+stg1r_mmr <- readRDS(here("data","stg1r_mmr.rds"))
+tictoc::tic()
+stg1rstar_mmr <- solve(Lmmr) %*% stg1r_mmr
+tictoc::toc()
+saveRDS(stg1rstar_mmr,file=here("data","stg1rstar_mmr.rds"))
+
+head(stg1rstar_mmr)
+
+## compare raw stage-one residuals and standardized residuals
+rtype_mmr <- c(rep("Raw", length(stg1r_mmr)), rep("Standardized", length(stg1r_mmr)))
+resid_mmr <- c(stg1r_mmr, stg1rstar_mmr)
+stg1resids_mmr <- as.data.frame(cbind(rtype_mmr, as.numeric(resid_mmr)))
+
+# create plot
+ggplot(stg1resids_mmr, aes(x = resid_mmr, fill = rtype_mmr)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) +
+  labs(y = "Count", x = "Residuals", fill = "Type")
+
+## Lagged residual plot
+vaccine_mmr %>% 
+  mutate(rhat = stg1rstar_mmr) %>% 
+  group_by(school_id) %>% 
+  mutate(rhat1 = lag(rhat)) %>% 
+  ggplot(aes(y = rhat, x= rhat1))+
+  geom_point()+
+  labs(y = "Standardized Residual",x = "Lagged Standardized Residual")
+
+## Normal QQ Plot of standardized residuals
+
+qqnorm(stg1rstar_mmr, pch = 1)
+qqline(stg1rstar_mmr, col = "steelblue", lwd = 2)
+
+qqnorm(residuals(lmm3mmr , type = "n")) # standardized residual
+qqline(residuals(lmm3mmr , type = "n"))
+
+## Plot standardized residuals against predicted mean
+yhat <- predict(lmm3mmr)
+plot(y = stg1rstar_mmr, x = yhat)
+
+```
+
+#### Diagnostics of random effects
+
+```{r}
+#| fig-cap:  Normal qqplot of the county-level random effects
+
+## Normal qqplot of the random effects: county-level random effects
+bjkhat <- ranef(lmm3mmr, condVar = TRUE)$county %>% pull()
+
+qqnorm(bjkhat, pch = 1)
+qqline(bjkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+#| fig-cap: Normal qqplot of the state-level random effects
+## Normal qqplot of the random effects: state-level random effects
+bkhat <- ranef(lmm3mmr, condVar = TRUE)$state %>% pull()
+
+qqnorm(bkhat, pch = 1)
+qqline(bkhat, col = "steelblue", lwd = 2)
+
+```
+
+```{r}
+#| fig-cap: Histogram of county random effects residuals
+
+## Histogram of county random effects residuals
+ranef(lmm3mmr)$county %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+
+
+```{r}
+#| fig-cap: Histogram of state random effects residuals
+
+## Histogram of state random effects residuals
+
+ranef(lmm3mmr)$state %>%
+  pivot_longer(cols = c("(Intercept)"),
+               names_to = "ranefs",
+               values_to = "estimates") %>%
+  ggplot(aes(x = estimates)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50, fill = "orange") +
+  facet_grid(~ ranefs)
+
+```
+
+
+###  Table 4: intra-class correlation
+
+Random effect variances and intra-class correlation coefficients from linear mixed effects models for Measles, Mumps, and Rubella (MMR) vaccination rates.
+
+```{r}
+#| tbl_cap: Table 4. Random Effect Variance and Intra-class Correlation Coefficients
+## extract random effects variances
+re_variance_mmr <- as.data.frame(VarCorr(lmm3mmr))
+
+# create vector for county random effect variance
+re_var_county_mmr <- re_variance_mmr %>% filter(grp=="county") %>% select(vcov) %>% pull()
+
+# create vector for state random effect variance
+re_var_state_mmr <- re_variance_mmr %>% filter(grp=="state") %>% select(vcov) %>% pull()
+
+# create vector for error term variance
+re_var_resid_mmr <- re_variance_mmr %>% filter(grp=="Residual") %>% select(vcov) %>% pull()
+  
+## correlation between two schools in the same county within the same state
+corr_county_mmr <- as.data.frame(as.numeric(re_var_county_mmr + re_var_state_mmr) / (re_var_resid_mmr + re_var_state_mmr + re_var_county_mmr)) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in same county")
+
+## correlation between two schools in different counties but within the same state
+corr_state_mmr <- as.data.frame(as.numeric(re_var_state_mmr / (re_var_resid_mmr + re_var_state_mmr + re_var_county_mmr))) %>%
+  dplyr::rename(Correlation_coefficient = 1) %>%
+  mutate(Type = "Schools in different counties within same state")
+
+corr_table_mmr <- rbind(corr_county_mmr, corr_state_mmr) %>%
+  select(Type, Correlation_coefficient)
+corr_table_mmr
+
+```
+
+# PART 3: Supplementary Tables
+### Supplementary Table A1: More detailed summary statistics by state
+
+```{r}
+#| tbl-cap: Table A1. Summary Statistics of Variables in Analytical Dataset by State and Outcome
+generate_table <- function(data, filter_conditions) {
+  data %>%
+    filter(!!!filter_conditions) %>%
+    group_by(state) %>%
+    
+    summarise(
+      county_number = n_distinct(county, na.rm = TRUE),
+      school_number = length(name),
+      
+      spending = unique(statespending2016),
+      spend_person = unique(spend_person),
+      
+      school_year_2017_18 = length(year_recode[year_recode == "2017-18"]),
+      school_year_2018_19 = length(year_recode[year_recode == "2018-19"]),
+      
+      mean_overall = round(mean(overall_recode, na.rm = TRUE), 2),
+      sd_overall = round(sd(overall_recode, na.rm = TRUE), 2),
+      median_overall = round(median(overall_recode, na.rm = TRUE), 2),
+      iqr_overall = round(IQR(overall_recode, na.rm = TRUE), 2),
+      
+      mean_mmr = round(mean(mmr_recode, na.rm = TRUE), 2),
+      sd_mmr = round(sd(mmr_recode, na.rm = TRUE), 2),
+      median_mmr = round(median(mmr_recode, na.rm = TRUE), 2),
+      iqr_mmr = round(IQR(mmr_recode, na.rm = TRUE), 2)
+      
+    ) %>%
+    mutate(across(everything(), ~ replace(., is.na(.), " "))) %>%
+
+    mutate(
+      mean_sd_overall = paste0(mean_overall, " (", sd_overall, ")"),
+      median_iqr_overall = paste0(median_overall, " (", iqr_overall, ")"),
+      mean_sd_mmr = paste0(mean_mmr, " (", sd_mmr, ")"),
+      median_iqr_mmr = paste0(median_mmr, " (", iqr_mmr, ")"))
+  }
+
+filter_mmr <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                   quote(mmr_recode != " "))
+
+filter_overall <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                       quote(overall_recode != " "))
+
+filter_both <- list(quote(mmr_recode != -1 | overall_recode != -1), 
+                    quote(mmr_recode != " "), 
+                    quote(overall_recode != " "))
+
+table_mmr <- generate_table(vaccine_dat, filter_mmr)
+table_overall <- generate_table(vaccine_dat, filter_overall)
+
+table_combine <- bind_rows(table_mmr, table_overall)
+
+table_combine %>% 
+  select(state, county_number, school_number, 
+         school_year_2017_18, school_year_2018_19,
+         spending, spend_person, 
+         mean_sd_overall, median_iqr_overall, 
+         mean_sd_mmr, median_iqr_mmr) %>% 
+  
+  mutate(across(everything(), ~ replace(., . == "  ( )" |
+                                           . == "  ( - )" , " "))) %>% 
+  
+  kable(col.names = c("Outcome variable",
+                      "Number of county report",
+                      "Number of school report",
+                      "2017 - 2018",
+                      "2018 - 2019",
+                      "Per state", "Per person", 
+                      "Mean (SD)", "Median (IQR)",
+                      "Mean (SD)", "Median (IQR)"),
+        format = "html", escape = FALSE) %>% 
+  
+  group_rows("MMR (N = 21)", 1, nrow(table_mmr)) %>% 
+  group_rows("Overall (N = 17)", 
+             nrow(table_mmr) + 1, 
+             nrow(table_mmr) + 
+             nrow(table_overall)) %>% 
+  
+add_header_above(c(" " = 1, " " = 2, "School year" = 2,
+                     "State spending in US$ (millions)" = 2,
+                     "Overall Vaccination Rate" = 2, "MMR Vaccination Rate" = 2))
+```
+### Supplementary Table A2: AIC and BIC to compare models
+
+Combine overall vaccination and MMR vaccination AIC and BIC tables
+
+```{r}
+#| tbl-cap: Table A2. AIC and BIC to compare models
+
+info_criterion <- rbind(info_crit_table, info_crit_table_mmr) %>%
+  select(Outcome, Model, AIC, BIC) %>%
+  # make it pretty
+    kable(col.names = c("Outcome",
+                        "Model",
+                        "AIC",
+                      "BIC"),
+        format = "html", escape = FALSE) 
+info_criterion
+```
+
+```{r}
+tictoc::toc()
+
+```
